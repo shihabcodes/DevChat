@@ -58,6 +58,15 @@ class ApiClient {
         return data;
     }
 
+    async googleLogin(credential) {
+        const data = await this.request('/auth/google', {
+            method: 'POST',
+            body: JSON.stringify({ credential }),
+        });
+        this.setToken(data.token);
+        return data;
+    }
+
     async getMe() {
         return this.request('/auth/me');
     }

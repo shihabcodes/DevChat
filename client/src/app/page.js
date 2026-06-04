@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { GoogleLogin } from '@react-oauth/google';
 import api from '@/lib/api';
 
 export default function Home() {
@@ -54,6 +55,27 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setError('');
+        setLoading(true);
+        try {
+            const data = await api.googleLogin(credentialResponse.credential);
+            if (data.workspaces && data.workspaces.length > 0) {
+                router.push(`/workspace/${data.workspaces[0]._id}`);
+            } else if (data.workspace) {
+                router.push(`/workspace/${data.workspace._id}`);
+            }
+        } catch (err) {
+            setError(err.message || 'Google login failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleError = () => {
+        setError('Google Login Failed');
     };
 
     const handleJoinWorkspace = async (e) => {
@@ -250,6 +272,22 @@ export default function Home() {
                         >
                             {loading ? '...' : mode === 'login' ? 'Sign In' : 'Create Account'}
                         </button>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0' }}>
+                            <div style={{ flex: 1, height: 1, background: '#2D2D5E' }} />
+                            <span style={{ padding: '0 1rem', fontSize: '0.8rem', color: '#9CA3AF' }}>OR</span>
+                            <div style={{ flex: 1, height: 1, background: '#2D2D5E' }} />
+                        </div>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={handleGoogleError}
+                                theme="filled_black"
+                                shape="pill"
+                                text={mode === 'login' ? 'signin_with' : 'signup_with'}
+                            />
+                        </div>
                     </form>
                 </div>
 

@@ -6,6 +6,16 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const setupSocketHandlers = require('./socket/handlers');
 
+// Prevent Node.js from crashing due to background TTY EIO errors
+process.on('uncaughtException', (err) => {
+    if (err.code === 'EIO' && err.syscall === 'read') {
+        console.warn('Ignored TTY read EIO error.');
+        return;
+    }
+    console.error('Uncaught Exception:', err);
+    process.exit(1);
+});
+
 const authRoutes = require('./routes/auth');
 const workspaceRoutes = require('./routes/workspaces');
 const channelRoutes = require('./routes/channels');
