@@ -33,12 +33,11 @@ Save both — you'll paste them into Railway.
 ## 3. Deploy the backend to Railway
 
 1. Go to https://railway.app/new → **Deploy from GitHub repo** → pick `shihabcodes/DevChat`.
-2. Set the **Root Directory** to `server`.
-3. Railway auto-detects Node and uses the `Procfile` / `railway.json`. No Dockerfile needed.
+2. **Set the Root Directory to `server`** (Settings → Source → Root Directory). This is required — the Node project lives in `server/`, not at the repo root. The repo also ships a root-level `nixpacks.toml` as a fallback, but setting the Root Directory in the UI is the official path and avoids edge cases.
+3. Railway auto-detects Node and uses the `Procfile` / `railway.json` in `server/`. No Dockerfile needed.
 4. In the **Variables** tab, set:
    ```
    NODE_ENV=production
-   PORT=5001
    MONGODB_URI=mongodb+srv://...
    JWT_SECRET=<from step 2>
    OPENAI_KEY_ENCRYPTION_SECRET=<from step 2>
@@ -47,7 +46,8 @@ Save both — you'll paste them into Railway.
    GOOGLE_CLIENT_ID=<from step 5 below, can leave blank for now>
    DEMO_TTL_HOURS=2
    ```
-5. Deploy. Watch the logs — you should see `[info] DevChat server listening on :5001 (env=production)`.
+   > `PORT` is set automatically by Railway — don't override it.
+5. Deploy. Watch the logs — you should see `[info] DevChat server listening on :<port> (env=production)`.
 6. Click the generated Railway domain (something like `devchat-production.up.railway.app`). Visit `https://<railway-domain>/api/health` — you should get:
    ```json
    {"status":"ok","mongo":1,"timestamp":"...","uptime":...}
@@ -109,6 +109,7 @@ npm run dev            # http://localhost:3000
 
 ## Troubleshooting
 
+- **`Railpack could not determine how to build the app` / `Script start.sh not found`** → you forgot to set Root Directory to `server` in step 3.2. Go to the service → Settings → Source → Root Directory = `server`, then redeploy. The repo also includes a root-level `nixpacks.toml` as a fallback that should make this work even without the UI setting, but the UI is the supported path.
 - **`/api/health` returns `mongo: 0`** → check `MONGODB_URI` and Atlas network access.
 - **CORS errors in browser** → ensure `ALLOWED_ORIGINS` on Railway includes the Vercel URL **without trailing slash**.
 - **"JWT_SECRET looks like a placeholder"** → you didn't replace the default. Generate a real one.

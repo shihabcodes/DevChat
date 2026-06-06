@@ -1,0 +1,21 @@
+# Root-level Nixpacks config for the monorepo. The Node service
+# lives in server/, not at the root. With this file, Nixpacks knows
+# where to look even if the Railway service's Root Directory isn't
+# set to "server" in the dashboard.
+#
+# If you DO set Root Directory = "server" in the Railway UI, this
+# file is a no-op (Nixpacks will use the configs in server/).
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["cd server && npm install --omit=dev"]
+
+[start]
+cmd = "cd server && node src/index.js"
+
+[variables]
+NODE_ENV = "production"
+NPM_CONFIG_UPDATE_NOTIFIER = "false"
+NPM_CONFIG_FUND = "false"
