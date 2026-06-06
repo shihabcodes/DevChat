@@ -95,22 +95,26 @@ export default function WorkspacePage() {
         s.on('onlineUsers', setOnlineUsers);
         s.on('newMessage', (msg) => {
             setMessages((prev) => {
-                if (prev.find((m) => m._id === msg._id)) return prev;
-                // Replace optimistic temp message if this matches one we sent.
-                const tempIdx = prev.findIndex(
-                    (m) => m._pending && m.content === msg.content && m.user?._id === msg.user?._id
-                );
-                if (tempIdx >= 0) {
-                    const next = prev.slice();
-                    next[tempIdx] = msg;
-                    return next;
+                // Server echoes our own message with _tempId set; swap
+                // the matching optimistic placeholder for the real
+                // message so the user doesn't see a duplicate.
+                if (msg._tempId) {
+                    const idx = prev.findIndex((m) => m._id === msg._tempId);
+                    if (idx >= 0) {
+                        const next = prev.slice();
+                        const { _tempId, ...clean } = msg;
+                        next[idx] = clean;
+                        return next;
+                    }
                 }
+                // Dedupe (other clients may have already seen it).
+                if (prev.find((m) => m._id === msg._id)) return prev;
                 return [...prev, msg];
             });
-            // Clear failure timer if any.
-            for (const [tempId, timer] of pendingTimers.current.entries()) {
-                clearTimeout(timer);
-                pendingTimers.current.delete(tempId);
+            // Clear the matching failure timer.
+            if (msg._tempId && pendingTimers.current.has(msg._tempId)) {
+                clearTimeout(pendingTimers.current.get(msg._tempId));
+                pendingTimers.current.delete(msg._tempId);
             }
         });
         s.on('userTyping', (data) => {
@@ -218,18 +222,43 @@ export default function WorkspacePage() {
     }, [socket, activeChannel, currentUser]);
 
     const handleRetry = useCallback((failedMsg) => {
-        setMessages((prev) => prev.map((m) =>
-            m._id === failedMsg._id ? { ...m, _failed: false, _pending: true } : m
-        ));
+        // Remove the failed message entirely; the retry creates a new
+        // optimistic one, and when the server echoes the new message
+        // we'll add it once. Keeping the old one would duplicate.
+        setMessages((prev) => prev.filter((m) => m._id !== failedMsg._id));
         if (socket && activeChannel) {
+            const tempId = TEMP_ID();
+            const optimistic = {
+                _id: tempId,
+                _pending: true,
+                content: failedMsg.content,
+                type: failedMsg.type,
+                language: failedMsg.language,
+                channel: activeChannel._id,
+                user: {
+                    _id: currentUser?._id,
+                    displayName: currentUser?.displayName,
+                    avatar: currentUser?.avatar,
+                },
+                createdAt: new Date().toISOString(),
+            };
+            setMessages((prev) => [...prev, optimistic]);
+            const timer = setTimeout(() => {
+                setMessages((prev) => prev.map((m) =>
+                    m._id === tempId ? { ...m, _failed: true, _pending: false } : m
+                ));
+                pendingTimers.current.delete(tempId);
+            }, 6000);
+            pendingTimers.current.set(tempId, timer);
             socket.emit('sendMessage', {
                 content: failedMsg.content,
                 type: failedMsg.type,
                 language: failedMsg.language,
                 channelId: activeChannel._id,
+                _tempId: tempId,
             });
         }
-    }, [socket, activeChannel]);
+    }, [socket, activeChannel, currentUser]);
 
     const handleTyping = useCallback(() => {
         if (!socket || !activeChannel) return;

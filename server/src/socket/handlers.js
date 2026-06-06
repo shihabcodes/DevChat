@@ -110,7 +110,7 @@ const setupSocketHandlers = (io) => {
                 if (!data || typeof data !== 'object') {
                     return socket.emit('error', { code: 'INVALID_PAYLOAD', message: 'Bad payload' });
                 }
-                const { content, type, language, channelId } = data;
+                const { content, type, language, channelId, _tempId } = data;
                 if (!channelId || !/^[a-f0-9]{24}$/i.test(channelId)) {
                     return socket.emit('error', { code: 'INVALID_ID', message: 'Invalid channel id' });
                 }
@@ -134,7 +134,11 @@ const setupSocketHandlers = (io) => {
                 });
                 const populated = await Message.findById(message._id)
                     .populate('user', 'displayName email avatar');
-                io.to(`channel:${channelId}`).emit('newMessage', populated);
+                // Echo the tempId back so the sender can swap their
+                // optimistic message for the real one. We only echo to
+                // the sender; everyone else just gets the message.
+                socket.emit('newMessage', { ...populated.toObject(), _tempId });
+                socket.to(`channel:${channelId}`).emit('newMessage', populated);
             } catch (err) {
                 socket.emit('error', { code: 'SEND_FAILED', message: 'Failed to send message' });
             }
