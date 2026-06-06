@@ -1,0 +1,12 @@
+# Railway
+# Build: `npm ci --omit=dev` (or `npm install`) and start with `node src/index.js`.
+# Set environment variables in the Railway dashboard:
+#   MONGODB_URI
+#   JWT_SECRET       (>= 32 chars, base64)
+#   OPENAI_KEY_ENCRYPTION_SECRET   (>= 32 chars, base64)
+#   GOOGLE_CLIENT_ID
+#   ALLOWED_ORIGINS  (comma-separated, include your Vercel URL)
+#   CLIENT_URL       (your Vercel URL)
+#   NODE_ENV=production
+#
+# Health check is set to /api/health via railway.json.

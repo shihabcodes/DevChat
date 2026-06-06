@@ -11,6 +11,8 @@ export default function Sidebar({
     onlineUsers,
     currentUser,
     onLogout,
+    onOpenAISettings,
+    hasOpenaiKey,
 }) {
     const [showNewChannel, setShowNewChannel] = useState(false);
     const [newChannelName, setNewChannelName] = useState('');
@@ -26,242 +28,129 @@ export default function Sidebar({
     };
 
     return (
-        <div style={{
-            width: 260,
-            minWidth: 260,
-            height: '100vh',
-            background: '#12122A',
-            borderRight: '1px solid #2D2D5E',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-        }}>
-            {/* Workspace Header */}
-            <div style={{
-                padding: '1.25rem 1rem',
-                borderBottom: '1px solid #2D2D5E',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <h2 style={{
-                        fontSize: '1rem',
-                        fontWeight: 700,
-                        color: '#F9FAFB',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}>
+        <div className="w-[260px] min-w-[260px] h-screen bg-[#12122A] border-r border-[#2D2D5E] flex flex-col overflow-hidden">
+            <div className="px-4 py-5 border-b border-[#2D2D5E]">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-base font-bold text-[#F9FAFB] truncate">
                         {workspace?.name || 'Workspace'}
                     </h2>
                     <button
-                        onClick={() => setShowInvite(!showInvite)}
-                        className="tooltip"
+                        onClick={() => setShowInvite((s) => !s)}
+                        className="tooltip text-[#9CA3AF] hover:text-white text-base p-1 rounded transition-colors"
                         data-tooltip="Invite link"
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#9CA3AF',
-                            cursor: 'pointer',
-                            fontSize: '1rem',
-                            padding: '0.25rem',
-                            borderRadius: 6,
-                            transition: 'color 0.2s',
-                        }}
-                        onMouseOver={(e) => (e.target.style.color = '#F9FAFB')}
-                        onMouseOut={(e) => (e.target.style.color = '#9CA3AF')}
+                        aria-label="Show invite link"
                     >
                         🔗
                     </button>
                 </div>
                 {showInvite && workspace?.inviteCode && (
-                    <div className="animate-fade-in" style={{
-                        marginTop: '0.75rem',
-                        padding: '0.6rem 0.75rem',
-                        background: '#1A1A3E',
-                        borderRadius: 8,
-                        fontSize: '0.75rem',
-                    }}>
-                        <span style={{ color: '#9CA3AF' }}>Invite code: </span>
-                        <code style={{
-                            color: '#A855F7',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            cursor: 'pointer',
-                        }}
+                    <div className="animate-fade-in mt-3 p-2.5 bg-[#1A1A3E] rounded-md text-[0.75rem]">
+                        <span className="text-[#9CA3AF]">Invite code: </span>
+                        <code
+                            className="text-[#A855F7] font-['JetBrains_Mono',monospace] cursor-pointer hover:underline"
                             onClick={() => navigator.clipboard.writeText(workspace.inviteCode)}
                         >
                             {workspace.inviteCode}
                         </code>
-                        <span style={{ color: '#6B7280', fontSize: '0.65rem', display: 'block', marginTop: 4 }}>
-                            Click to copy
-                        </span>
+                        <span className="text-[#6B7280] text-[0.65rem] block mt-1">Click to copy</span>
                     </div>
                 )}
             </div>
 
-            {/* Channels Section */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0' }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0 1rem',
-                    marginBottom: '0.5rem',
-                }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        Channels
-                    </span>
+            <div className="flex-1 overflow-y-auto py-4">
+                <div className="flex items-center justify-between px-4 mb-2">
+                    <span className="text-[0.7rem] font-bold text-[#6B7280] uppercase tracking-wider">Channels</span>
                     <button
-                        onClick={() => setShowNewChannel(!showNewChannel)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#6B7280',
-                            cursor: 'pointer',
-                            fontSize: '1.1rem',
-                            lineHeight: 1,
-                            padding: '0.15rem 0.3rem',
-                            borderRadius: 4,
-                            transition: 'all 0.2s',
-                        }}
-                        onMouseOver={(e) => (e.target.style.color = '#F9FAFB')}
-                        onMouseOut={(e) => (e.target.style.color = '#6B7280')}
+                        onClick={() => setShowNewChannel((s) => !s)}
+                        className="text-[#6B7280] hover:text-white text-lg leading-none px-1 py-0.5 rounded transition-colors"
+                        aria-label="Create channel"
                     >
                         +
                     </button>
                 </div>
 
                 {showNewChannel && (
-                    <form onSubmit={handleCreateChannel} className="animate-fade-in" style={{ padding: '0 0.75rem', marginBottom: '0.5rem' }}>
+                    <form onSubmit={handleCreateChannel} className="animate-fade-in px-3 mb-2">
                         <input
                             type="text"
                             value={newChannelName}
                             onChange={(e) => setNewChannelName(e.target.value)}
                             placeholder="channel-name"
                             autoFocus
-                            style={{
-                                width: '100%',
-                                padding: '0.5rem 0.65rem',
-                                borderRadius: 6,
-                                border: '1px solid #3D3D6E',
-                                background: '#13132E',
-                                color: '#F9FAFB',
-                                fontSize: '0.8rem',
-                                fontFamily: 'Inter, sans-serif',
-                                outline: 'none',
-                            }}
+                            className="w-full px-2.5 py-1.5 rounded-md border border-[#3D3D6E] bg-[#13132E] text-[#F9FAFB] text-[0.8rem] outline-none focus:border-[#4F46E5]"
                             onKeyDown={(e) => e.key === 'Escape' && setShowNewChannel(false)}
                         />
                     </form>
                 )}
 
-                {channels.map((channel) => (
-                    <button
-                        key={channel._id}
-                        onClick={() => onSelectChannel(channel)}
-                        style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            padding: '0.45rem 1rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.85rem',
-                            fontFamily: 'Inter, sans-serif',
-                            transition: 'all 0.15s',
-                            background: activeChannel?._id === channel._id
-                                ? 'rgba(79, 70, 229, 0.15)'
-                                : 'transparent',
-                            color: activeChannel?._id === channel._id ? '#F9FAFB' : '#9CA3AF',
-                            borderLeft: activeChannel?._id === channel._id
-                                ? '2px solid #4F46E5'
-                                : '2px solid transparent',
-                        }}
-                        onMouseOver={(e) => {
-                            if (activeChannel?._id !== channel._id) {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                                e.currentTarget.style.color = '#F9FAFB';
-                            }
-                        }}
-                        onMouseOut={(e) => {
-                            if (activeChannel?._id !== channel._id) {
-                                e.currentTarget.style.background = 'transparent';
-                                e.currentTarget.style.color = '#9CA3AF';
-                            }
-                        }}
-                    >
-                        <span style={{ color: '#6B7280', fontSize: '0.9rem' }}>#</span>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {channel.name}
-                        </span>
-                    </button>
-                ))}
+                {channels.map((channel) => {
+                    const isActive = activeChannel?._id === channel._id;
+                    return (
+                        <button
+                            key={channel._id}
+                            onClick={() => onSelectChannel(channel)}
+                            className={`w-full flex items-center gap-2 px-4 py-1.5 text-[0.85rem] transition-all border-l-2
+                                ${isActive
+                                    ? 'bg-[rgba(79,70,229,0.15)] text-[#F9FAFB] border-l-[#4F46E5]'
+                                    : 'text-[#9CA3AF] hover:bg-white/[0.03] hover:text-white border-l-transparent'}`}
+                        >
+                            <span className="text-[#6B7280] text-[0.9rem]">#</span>
+                            <span className="truncate">{channel.name}</span>
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Online Users */}
-            <div style={{ borderTop: '1px solid #2D2D5E', padding: '0.75rem 1rem' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div className="border-t border-[#2D2D5E] px-4 py-3">
+                <span className="text-[0.7rem] font-bold text-[#6B7280] uppercase tracking-wider">
                     Online — {onlineUsers.length}
                 </span>
-                <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.3rem', maxHeight: 120, overflowY: 'auto' }}>
+                <div className="mt-2 flex flex-col gap-1 max-h-[120px] overflow-y-auto">
                     {onlineUsers.map((u, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}>
-                            <div style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                background: '#16A34A',
-                                boxShadow: '0 0 6px rgba(22, 163, 74, 0.5)',
-                            }} />
-                            <span style={{ color: '#9CA3AF' }}>{u.displayName}</span>
+                        <div key={i} className="flex items-center gap-2 text-[0.8rem]">
+                            <div className="w-2 h-2 rounded-full bg-[#16A34A] shadow-[0_0_6px_rgba(22,163,74,0.5)]" />
+                            <span className="text-[#9CA3AF] truncate">{u.displayName}</span>
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* Current User */}
-            <div style={{
-                borderTop: '1px solid #2D2D5E',
-                padding: '0.75rem 1rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <div style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #4F46E5, #A855F7)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        color: '#fff',
-                    }}>
+            <div className="border-t border-[#2D2D5E] px-3 py-2.5">
+                <button
+                    onClick={onOpenAISettings}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[0.78rem] transition-colors
+                        ${hasOpenaiKey
+                            ? 'text-[#86EFAC] hover:bg-[rgba(22,163,74,0.1)]'
+                            : 'text-[#F59E0B] hover:bg-[rgba(245,158,11,0.1)]'}`}
+                    title="Configure your OpenAI key for AI explanations"
+                >
+                    <span>{hasOpenaiKey ? '✓' : '⚡'}</span>
+                    <span className="flex-1 text-left">
+                        {hasOpenaiKey ? 'AI Connected' : 'Add OpenAI key'}
+                    </span>
+                    <span className="text-[0.65rem] opacity-60">⚙</span>
+                </button>
+            </div>
+
+            <div className="border-t border-[#2D2D5E] px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#A855F7] flex items-center justify-center text-[0.75rem] font-bold text-white flex-shrink-0">
                         {currentUser?.displayName?.[0]?.toUpperCase() || '?'}
                     </div>
-                    <div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#F9FAFB' }}>
+                    <div className="min-w-0">
+                        <div className="text-[0.8rem] font-semibold text-[#F9FAFB] truncate">
                             {currentUser?.displayName || 'User'}
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: '#6B7280' }}>online</div>
+                        <div className="text-[0.65rem] text-[#6B7280]">online</div>
                     </div>
                 </div>
                 <button
                     onClick={onLogout}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#6B7280',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        padding: '0.25rem',
-                        borderRadius: 6,
-                    }}
+                    className="text-[#6B7280] hover:text-white text-sm p-1.5 rounded transition-colors"
                     title="Sign Out"
+                    aria-label="Sign out"
                 >
-                    ↩
+                    ⎋
                 </button>
             </div>
         </div>

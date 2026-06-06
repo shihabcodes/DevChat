@@ -9,6 +9,7 @@ export default function ChatArea({
     currentUser,
     typingUsers,
     onExplain,
+    onMissingKey,
     loading,
 }) {
     const bottomRef = useRef(null);
@@ -19,75 +20,39 @@ export default function ChatArea({
     }, [messages]);
 
     return (
-        <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: 0,
-        }}>
-            {/* Channel Header */}
-            <div style={{
-                padding: '0.85rem 1.25rem',
-                borderBottom: '1px solid #2D2D5E',
-                background: 'rgba(15, 15, 35, 0.8)',
-                backdropFilter: 'blur(12px)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-            }}>
-                <span style={{ color: '#6B7280', fontSize: '1.1rem' }}>#</span>
-                <h3 style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 700,
-                    color: '#F9FAFB',
-                }}>
+        <div className="flex-1 flex flex-col min-h-0">
+            <div className="px-5 py-[0.85rem] border-b border-[#2D2D5E] bg-[rgba(15,15,35,0.8)] backdrop-blur-md flex items-center gap-2">
+                <span className="text-[#6B7280] text-lg">#</span>
+                <h3 className="text-[0.95rem] font-bold text-[#F9FAFB]">
                     {channel?.name || 'general'}
                 </h3>
                 {channel?.description && (
                     <>
-                        <div style={{ width: 1, height: 16, background: '#2D2D5E', margin: '0 0.35rem' }} />
-                        <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>{channel.description}</span>
+                        <div className="w-px h-4 bg-[#2D2D5E] mx-1.5" />
+                        <span className="text-[0.8rem] text-[#6B7280]">{channel.description}</span>
                     </>
                 )}
             </div>
 
-            {/* Messages */}
-            <div
-                ref={containerRef}
-                style={{
-                    flex: 1,
-                    overflowY: 'auto',
-                    padding: '0.75rem 0',
-                }}
-            >
+            <div ref={containerRef} className="flex-1 overflow-y-auto py-3">
                 {loading ? (
-                    <div style={{ padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="px-5 flex flex-col gap-4">
                         {[...Array(5)].map((_, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '0.65rem' }}>
-                                <div className="skeleton" style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0 }} />
-                                <div style={{ flex: 1 }}>
-                                    <div className="skeleton" style={{ width: 100, height: 14, marginBottom: 6 }} />
-                                    <div className="skeleton" style={{ width: `${60 + Math.random() * 30}%`, height: 14 }} />
+                            <div key={i} className="flex gap-2.5">
+                                <div className="skeleton w-9 h-9 rounded-full flex-shrink-0" />
+                                <div className="flex-1">
+                                    <div className="skeleton h-3.5 mb-1.5" style={{ width: 100 }} />
+                                    <div className="skeleton h-3.5" style={{ width: `${60 + Math.random() * 30}%` }} />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : messages.length === 0 ? (
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '100%',
-                        color: '#6B7280',
-                        gap: '0.5rem',
-                    }}>
-                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>💬</div>
-                        <p style={{ fontSize: '1rem', fontWeight: 600, color: '#9CA3AF' }}>
-                            No messages yet
-                        </p>
-                        <p style={{ fontSize: '0.85rem' }}>
-                            Be the first to say something in <strong style={{ color: '#A855F7' }}>#{channel?.name}</strong>
+                    <div className="flex flex-col items-center justify-center h-full text-[#6B7280] gap-2">
+                        <div className="text-[2.5rem] mb-2">💬</div>
+                        <p className="text-base font-semibold text-[#9CA3AF]">No messages yet</p>
+                        <p className="text-sm">
+                            Be the first to say something in <strong className="text-[#A855F7]">#{channel?.name}</strong>
                         </p>
                     </div>
                 ) : (
@@ -97,24 +62,19 @@ export default function ChatArea({
                             message={msg}
                             isOwn={msg.user?._id === currentUser?._id}
                             onExplain={onExplain}
+                            onMissingKey={onMissingKey}
                         />
                     ))
                 )}
                 <div ref={bottomRef} />
             </div>
 
-            {/* Typing Indicator */}
             {typingUsers.length > 0 && (
-                <div className="animate-fade-in" style={{
-                    padding: '0.35rem 1.25rem',
-                    fontSize: '0.75rem',
-                    color: '#6B7280',
-                    fontStyle: 'italic',
-                }}>
-                    <span style={{ display: 'inline-flex', gap: 3, marginRight: 4 }}>
-                        <span style={{ animation: 'pulse-glow 1s infinite' }}>•</span>
-                        <span style={{ animation: 'pulse-glow 1s infinite 0.2s' }}>•</span>
-                        <span style={{ animation: 'pulse-glow 1s infinite 0.4s' }}>•</span>
+                <div className="animate-fade-in px-5 py-1.5 text-[0.75rem] text-[#6B7280] italic">
+                    <span className="inline-flex gap-[3px] mr-1">
+                        <span className="animate-pulse">•</span>
+                        <span className="animate-pulse" style={{ animationDelay: '0.2s' }}>•</span>
+                        <span className="animate-pulse" style={{ animationDelay: '0.4s' }}>•</span>
                     </span>
                     {typingUsers.map((u) => u.displayName).join(', ')}
                     {typingUsers.length === 1 ? ' is' : ' are'} typing

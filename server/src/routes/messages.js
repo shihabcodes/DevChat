@@ -1,31 +1,36 @@
 const express = require('express');
 const Message = require('../models/Message');
-const auth = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { requireChannelMember } = require('../middleware/authorize');
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/channel/:channelId', auth, async (req, res) => {
-    try {
-        const { page = 1, limit = 50 } = req.query;
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-
-        const messages = await Message.find({ channel: req.params.channelId })
-            .sort({ createdAt: 1 })
-            .skip(skip)
-            .limit(parseInt(limit))
-            .populate('user', 'displayName email avatar');
-
-        const total = await Message.countDocuments({ channel: req.params.channelId });
-
-        res.json({
-            messages,
-            total,
-            page: parseInt(page),
-            totalPages: Math.ceil(total / parseInt(limit)),
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+router.get('/channel/:channelId',
+    requireChannelMember((req) => req.params.channelId),
+    async (req, res, next) => {
+        try {
+            const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+            const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100);
+            const skip = (page - 1) * limit;
+            const [messages, total] = await Promise.all([
+                Message.find({ channel: req.channel._id })
+                    .sort({ createdAt: 1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .populate('user', 'displayName email avatar'),
+                Message.countDocuments({ channel: req.channel._id }),
+            ]);
+            res.json({
+                messages,
+                total,
+                page,
+                totalPages: Math.ceil(total / limit),
+            });
+        } catch (err) {
+            next(err);
+        }
     }
-});
+);
 
 module.exports = router;

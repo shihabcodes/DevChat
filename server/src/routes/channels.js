@@ -1,72 +1,73 @@
 const express = require('express');
 const Channel = require('../models/Channel');
 const Workspace = require('../models/Workspace');
-const auth = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { requireWorkspaceMember, requireChannelMember } = require('../middleware/authorize');
+const { schemas, validate } = require('../middleware/validate');
 
 const router = express.Router();
+router.use(authenticate);
 
-router.get('/workspace/:workspaceId', auth, async (req, res) => {
-    try {
-        const channels = await Channel.find({ workspace: req.params.workspaceId })
-            .sort({ createdAt: 1 });
+router.get('/workspace/:workspaceId',
+    requireWorkspaceMember((req) => req.params.workspaceId),
+    async (req, res) => {
+        const channels = await Channel.find({ workspace: req.workspace._id }).sort({ createdAt: 1 });
         res.json(channels);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
-});
+);
 
-router.post('/', auth, async (req, res) => {
-    try {
-        const { name, workspaceId, description } = req.body;
-
-        const workspace = await Workspace.findById(workspaceId);
-        if (!workspace || !workspace.members.includes(req.user._id)) {
-            return res.status(403).json({ error: 'Not a member of this workspace' });
+router.post('/',
+    validate(schemas.createChannel),
+    requireWorkspaceMember((req) => req.body.workspaceId),
+    async (req, res, next) => {
+        try {
+            const channel = await Channel.create({
+                name: req.body.name.toLowerCase().replace(/\s+/g, '-'),
+                workspace: req.workspace._id,
+                description: req.body.description,
+            });
+            res.status(201).json(channel);
+        } catch (err) {
+            if (err.code === 11000) {
+                return res.status(409).json({ error: 'Channel name already exists in this workspace' });
+            }
+            next(err);
         }
-
-        const channel = new Channel({
-            name: name.toLowerCase().replace(/\s+/g, '-'),
-            workspace: workspaceId,
-            description: description || '',
-        });
-        await channel.save();
-
-        res.status(201).json(channel);
-    } catch (error) {
-        if (error.code === 11000) {
-            return res.status(400).json({ error: 'Channel name already exists in this workspace' });
-        }
-        res.status(500).json({ error: error.message });
     }
-});
+);
 
-router.patch('/:id', auth, async (req, res) => {
-    try {
-        const { name } = req.body;
-        const channel = await Channel.findByIdAndUpdate(
-            req.params.id,
-            { name: name.toLowerCase().replace(/\s+/g, '-') },
-            { new: true }
-        );
-        if (!channel) {
-            return res.status(404).json({ error: 'Channel not found' });
+router.patch('/:id',
+    validate(schemas.updateChannel),
+    requireChannelMember((req) => req.params.id),
+    async (req, res, next) => {
+        try {
+            const channel = await Channel.findByIdAndUpdate(
+                req.channel._id,
+                { name: req.body.name.toLowerCase().replace(/\s+/g, '-') },
+                { new: true }
+            );
+            res.json(channel);
+        } catch (err) {
+            next(err);
         }
-        res.json(channel);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
-});
+);
 
-router.delete('/:id', auth, async (req, res) => {
-    try {
-        const channel = await Channel.findByIdAndDelete(req.params.id);
-        if (!channel) {
-            return res.status(404).json({ error: 'Channel not found' });
+router.delete('/:id',
+    requireChannelMember((req) => req.params.id),
+    async (req, res, next) => {
+        try {
+            // Only the workspace owner or a channel admin can delete.
+            const isOwner = req.workspace.owner.toString() === req.user._id.toString();
+            if (!isOwner && req.user.role !== 'admin') {
+                return res.status(403).json({ error: 'Only the workspace owner can delete channels' });
+            }
+            await Channel.findByIdAndDelete(req.channel._id);
+            res.json({ message: 'Channel deleted' });
+        } catch (err) {
+            next(err);
         }
-        res.json({ message: 'Channel deleted' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
-});
+);
 
 module.exports = router;

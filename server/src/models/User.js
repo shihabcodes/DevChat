@@ -11,8 +11,10 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: function() { return !this.googleId; },
-        minlength: 6,
+        // Always required at the schema level. The auth route enforces
+        // that one of (password, googleId) is set per signup path.
+        required: true,
+        minlength: 8,
     },
     googleId: {
         type: String,
@@ -30,7 +32,7 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['developer', 'lead', 'admin'],
+        enum: ['developer', 'lead', 'admin', 'guest'],
         default: 'developer',
     },
     status: {
@@ -38,22 +40,42 @@ const userSchema = new mongoose.Schema({
         enum: ['online', 'offline', 'away'],
         default: 'offline',
     },
+    openaiKeyEnc: {
+        type: String,
+        default: null,
+        select: false,
+    },
+    openaiKeyMask: {
+        type: String,
+        default: null,
+    },
+    openaiKeySetAt: {
+        type: Date,
+        default: null,
+    },
+    expiresAt: {
+        type: Date,
+        default: null,
+        index: { expires: 0 },
+    },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+    if (!this.isModified('password') || !this.password) return next();
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
     next();
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
+    if (!this.password) return false;
     return bcrypt.compare(candidatePassword, this.password);
 };
 
 userSchema.methods.toJSON = function () {
     const obj = this.toObject();
     delete obj.password;
+    delete obj.openaiKeyEnc;
     return obj;
 };
 

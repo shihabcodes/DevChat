@@ -1,159 +1,150 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 
-export default function CodeBlock({ code, language, messageId, onExplain }) {
+import api, { ApiError } from '@/lib/api';
+import { highlightCode } from '@/lib/highlight';
+
+export default function CodeBlock({ code, language, messageId, onMissingKey }) {
     const [copied, setCopied] = useState(false);
     const [explaining, setExplaining] = useState(false);
     const [explanation, setExplanation] = useState(null);
     const [showExplain, setShowExplain] = useState(false);
+    const [html, setHtml] = useState(null);
+    const [needsKey, setNeedsKey] = useState(false);
+    const [error, setError] = useState(null);
+    const streamRef = useRef(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            const h = await highlightCode(code, language);
+            if (!cancelled) setHtml(h);
+        })();
+        return () => { cancelled = true; };
+    }, [code, language]);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch {/* ignore */}
     };
 
     const handleExplain = async () => {
         if (explanation) {
-            setShowExplain(!showExplain);
+            setShowExplain((v) => !v);
             return;
         }
+        if (!showExplain) setShowExplain(true);
+        if (explaining) return;
         setExplaining(true);
-        setShowExplain(true);
+        setError(null);
+        setNeedsKey(false);
+        setExplanation('');
         try {
-            const result = await onExplain(messageId, code, language);
-            setExplanation(result.explanation);
-        } catch (err) {
-            setExplanation('Failed to generate explanation. Please check your API key configuration.');
-        } finally {
+            const stream = api.explainCodeStream({
+                messageId,
+                code,
+                language,
+                onDelta: (delta, full) => setExplanation(full),
+            });
+            streamRef.current = stream;
+            const { text } = await stream.result;
+            if (!text) setExplanation(streamRef.current?._lastFull || '');
             setExplaining(false);
+        } catch (err) {
+            setExplaining(false);
+            if (err instanceof ApiError && err.code === 'NO_OPENAI_KEY') {
+                setNeedsKey(true);
+                if (onMissingKey) onMissingKey();
+            } else {
+                setError(err.message || 'Failed to generate explanation');
+            }
+        } finally {
+            streamRef.current = null;
         }
     };
 
-    const lines = code.split('\n');
+    useEffect(() => () => {
+        if (streamRef.current) streamRef.current.cancel();
+    }, []);
 
     return (
-        <div style={{ marginTop: '0.25rem' }}>
-            <div style={{
-                background: '#1E1E2E',
-                borderRadius: 10,
-                overflow: 'hidden',
-                border: '1px solid #2D2D5E',
-            }}>
-                {/* Header */}
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '0.5rem 0.75rem',
-                    background: 'rgba(0,0,0,0.2)',
-                    borderBottom: '1px solid #2D2D5E',
-                }}>
-                    <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        color: '#A855F7',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                        fontFamily: 'JetBrains Mono, monospace',
-                    }}>
+        <div className="mt-1">
+            <div className="rounded-[10px] overflow-hidden border border-[#2D2D5E] bg-[#1E1E2E]">
+                <div className="flex items-center justify-between px-3 py-2 bg-black/20 border-b border-[#2D2D5E]">
+                    <span className="text-[0.7rem] font-semibold text-[#A855F7] uppercase tracking-wider font-['JetBrains_Mono',monospace]">
                         {language || 'code'}
                     </span>
-                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                    <div className="flex gap-1.5">
                         <button
                             onClick={handleExplain}
-                            style={{
-                                padding: '0.25rem 0.6rem',
-                                borderRadius: 6,
-                                border: '1px solid rgba(79, 70, 229, 0.3)',
-                                background: showExplain ? 'rgba(79, 70, 229, 0.15)' : 'transparent',
-                                color: '#6366F1',
-                                cursor: 'pointer',
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                fontFamily: 'Inter, sans-serif',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.3rem',
-                            }}
+                            disabled={explaining}
+                            className={`px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-all
+                                ${showExplain
+                                    ? 'border-[rgba(79,70,229,0.4)] bg-[rgba(79,70,229,0.15)] text-[#818CF8]'
+                                    : 'border-[rgba(79,70,229,0.3)] text-[#6366F1] hover:bg-[rgba(79,70,229,0.1)]'}
+                                ${explaining ? 'opacity-60 cursor-wait' : ''}`}
                         >
-                            ✨ Explain
+                            {explaining ? '✨ Explaining…' : explanation ? '✨ Hide explanation' : '✨ Explain'}
                         </button>
                         <button
                             onClick={handleCopy}
-                            style={{
-                                padding: '0.25rem 0.6rem',
-                                borderRadius: 6,
-                                border: '1px solid #2D2D5E',
-                                background: 'transparent',
-                                color: copied ? '#16A34A' : '#9CA3AF',
-                                cursor: 'pointer',
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                fontFamily: 'Inter, sans-serif',
-                                transition: 'all 0.2s',
-                            }}
+                            className="px-2 py-1 rounded-md text-[0.7rem] font-semibold border border-[#2D2D5E] text-[#9CA3AF] hover:text-white hover:border-[#3D3D6E]"
                         >
                             {copied ? '✓ Copied' : 'Copy'}
                         </button>
                     </div>
                 </div>
-
-                {/* Code Content */}
-                <div style={{ overflow: 'auto', maxHeight: 400 }}>
-                    <pre style={{
-                        margin: 0,
-                        padding: '0.75rem',
-                        fontFamily: 'JetBrains Mono, monospace',
-                        fontSize: '0.8rem',
-                        lineHeight: 1.7,
-                        color: '#E2E8F0',
-                    }}>
-                        <code>
-                            {lines.map((line, i) => (
-                                <div key={i} style={{ display: 'flex' }}>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        width: '2.5rem',
-                                        textAlign: 'right',
-                                        color: '#4B5563',
-                                        marginRight: '1rem',
-                                        userSelect: 'none',
-                                        flexShrink: 0,
-                                    }}>
-                                        {i + 1}
-                                    </span>
-                                    <span style={{ flex: 1 }}>{line || ' '}</span>
-                                </div>
-                            ))}
-                        </code>
-                    </pre>
+                <div className="overflow-auto max-h-[400px]">
+                    {html ? (
+                        <div
+                            className="shiki-wrapper text-[0.8rem] leading-[1.7] p-3 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!font-['JetBrains_Mono',monospace]"
+                            dangerouslySetInnerHTML={{ __html: html }}
+                        />
+                    ) : (
+                        <pre className="m-0 p-3 font-['JetBrains_Mono',monospace] text-[0.8rem] leading-[1.7] text-[#E2E8F0]">
+                            <code>{code}</code>
+                        </pre>
+                    )}
                 </div>
             </div>
 
-            {/* AI Explanation */}
             {showExplain && (
-                <div className="ai-card animate-fade-in" style={{ marginTop: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                        <span style={{ fontSize: '0.9rem' }}>✨</span>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#A855F7' }}>AI Explanation</span>
+                <div className="ai-card animate-fade-in mt-2">
+                    <div className="flex items-center gap-1.5 mb-2">
+                        <span className="text-base">✨</span>
+                        <span className="text-[0.75rem] font-bold text-[#A855F7]">AI Explanation</span>
+                        {explaining && (
+                            <span className="ml-auto text-[0.65rem] text-[#6B7280] italic">streaming…</span>
+                        )}
                     </div>
-                    {explaining ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <div className="skeleton" style={{ height: 14, width: '90%' }} />
-                            <div className="skeleton" style={{ height: 14, width: '75%' }} />
-                            <div className="skeleton" style={{ height: 14, width: '60%' }} />
+                    {needsKey ? (
+                        <div className="text-[0.835rem] text-[#D1D5DB]">
+                            <p className="mb-2">To use AI explanations, add an OpenAI API key in <strong>AI Settings</strong> (sidebar bottom).</p>
+                            <p className="text-[#9CA3AF] text-[0.75rem]">
+                                Your key is encrypted at rest and used only to call OpenAI on your behalf. We never log or share it.
+                            </p>
+                        </div>
+                    ) : error ? (
+                        <div className="text-[0.835rem] text-[#FCA5A5]">{error}</div>
+                    ) : explaining && !explanation ? (
+                        <div className="flex flex-col gap-1.5">
+                            <div className="skeleton h-3.5 w-[90%]" />
+                            <div className="skeleton h-3.5 w-[75%]" />
+                            <div className="skeleton h-3.5 w-[60%]" />
                         </div>
                     ) : (
-                        <div style={{
-                            fontSize: '0.835rem',
-                            lineHeight: 1.65,
-                            color: '#D1D5DB',
-                            whiteSpace: 'pre-wrap',
-                        }}>
-                            {explanation}
+                        <div className="text-[0.835rem] leading-relaxed text-[#D1D5DB] prose prose-invert prose-sm max-w-none prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                                {explanation || ''}
+                            </ReactMarkdown>
+                            {explaining && <span className="inline-block w-1.5 h-3.5 bg-[#A855F7] ml-0.5 animate-pulse align-middle" />}
                         </div>
                     )}
                 </div>
