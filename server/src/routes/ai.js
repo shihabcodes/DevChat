@@ -61,11 +61,18 @@ router.post('/explain',
         try {
             const { messageId, code, language } = req.body;
 
-            // 1. Cache hit short-circuit.
+            // 1. Cache hit short-circuit. If we got a messageId and the
+            // message already has an AI explanation saved, return it
+            // immediately without calling OpenAI.
             if (messageId) {
                 const existing = await Message.findById(messageId);
                 if (existing && existing.aiExplanation) {
-                    const html = await renderHighlightedCode(code, language);
+                    // Use the code/language from the message itself if
+                    // the client didn't send them, so the cache hit
+                    // works for "open existing message" flows.
+                    const highlightCode = code || existing.content;
+                    const highlightLang = language || existing.language;
+                    const html = await renderHighlightedCode(highlightCode, highlightLang);
                     return res.json({
                         explanation: existing.aiExplanation,
                         highlightedHtml: html,

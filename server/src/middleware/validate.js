@@ -44,8 +44,10 @@ const sendMessageSchema = z.object({
 
 const explainSchema = z.object({
     messageId: objectId.optional(),
-    code: z.string().min(1).max(8000),
+    code: z.string().min(1).max(8000).optional(),
     language: z.string().max(40).optional().default(''),
+}).refine((d) => d.messageId || (d.code && d.code.length > 0), {
+    message: 'Either messageId or code is required',
 });
 
 const aiKeySchema = z.object({

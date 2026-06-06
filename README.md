@@ -20,15 +20,18 @@
 
 ## Features
 
-- 💬 **Real-time messaging** via WebSockets (Socket.io)
+- 💬 **Real-time messaging** via WebSockets (Socket.io) — with **optimistic send** and an **automatic reconnect banner**
 - 🖥️ **Syntax-highlighted code** with **Shiki** (the same engine that powers VS Code's docs), 20+ languages
-- ✨ **AI explanations** — click "Explain" on any code block, get a **streamed** GPT-4o response (you bring your own OpenAI key, encrypted at rest)
+- ✨ **AI explanations** — click "Explain" on any code block, get a **streamed** GPT-4o-mini response (you bring your own OpenAI key, encrypted at rest)
+- ⚡ **AI cache** — explanations are saved to the message, so the second time is instant (and free)
 - 🏢 **Workspaces & Channels** — create teams, organize conversations by topic
 - 🟢 **Presence indicators** — see who's online in real-time
 - ⌠ **Typing indicators** — "Alice is typing..."
 - 🔗 **Invite codes** — share a code to invite teammates
 - 🔒 **Google OAuth** + email/password
-- 🚀 **Try-the-demo mode** — no signup, full workspace pre-seeded with code samples
+- 🚀 **Try-the-demo mode** — no signup, full workspace pre-seeded with code samples and cached AI explanations
+- 📱 **Mobile-friendly** — sidebar becomes a slide-out drawer on small screens
+- 🛡️ **React error boundary** — a single component crash never blanks the whole UI
 - 🌙 **Dark-mode first** — built for developers who live in the terminal
 
 ## Tech Stack
@@ -90,6 +93,16 @@ cd client && npm run dev
 
 Visit **http://localhost:3000** → click **🚀 Try the demo** to land in a fully seeded workspace in 2 seconds.
 
+### 4. Verify the install
+
+With the server running on `:5001`, run an end-to-end smoke test (no test framework needed):
+
+```bash
+cd server && node smoke.js
+```
+
+You should see 22 passing checks covering health, validation, disposable email block, auth flows, demo seed, AI explain cache hit + 412, IDOR protection, and OpenAI key CRUD.
+
 ## Project Structure
 
 ```
@@ -136,7 +149,7 @@ All routes (except `/api/auth/*`, `/api/demo`, `/api/health`) require a JWT in t
 
 DevChat is built with the assumption that a hostile user is poking at every endpoint. Highlights:
 
-- **Helmet** security headers (CSP disabled in dev for DX, on in prod)
+- **Helmet** security headers (Helmet's default CSP in prod)
 - **CORS** allowlist from `ALLOWED_ORIGINS` env
 - **Request body size** capped at 64 KB
 - **Zod** input validation on every route + socket payload

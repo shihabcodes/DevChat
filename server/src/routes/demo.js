@@ -148,7 +148,7 @@ function startDemoCleanup() {
             await User.deleteMany({ _id: { $in: ids } });
         } catch (err) {
             // cleanup is best-effort
-            require('./config/logger').warn('demo cleanup failed', { message: err.message });
+            require('../config/logger').warn('demo cleanup failed', { message: err.message });
         }
     }, 15 * 60 * 1000);
     if (cleanupInterval.unref) cleanupInterval.unref();
@@ -184,11 +184,21 @@ router.post('/', async (req, res, next) => {
         await seedChannel(channel._id);
 
         const token = signToken(user);
+        // Fetch the seeded messages back so the client doesn't have to
+        // make a second round trip. .lean() returns plain JS objects
+        // (avoids Mongoose circular refs in JSON.stringify) and we
+        // populate just the user fields the client renders.
+        const messages = await Message.find({ channel: channel._id })
+            .sort({ createdAt: 1 })
+            .populate('user', 'displayName email avatar')
+            .lean();
+
         res.status(201).json({
             token,
             user: user.toJSON(),
             workspace,
             channel,
+            messages,
             ttlHours: env.DEMO_TTL_HOURS,
         });
     } catch (err) {

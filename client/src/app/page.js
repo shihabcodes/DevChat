@@ -111,6 +111,14 @@ export default function Home() {
         setDemoLoading(true);
         try {
             const data = await api.startDemo();
+            // Stash the demo messages in sessionStorage so the workspace
+            // page can render them without a second round trip.
+            if (data.messages) {
+                sessionStorage.setItem(
+                    `devchat_demo_messages_${data.channel._id}`,
+                    JSON.stringify(data.messages)
+                );
+            }
             router.push(`/workspace/${data.workspace._id}`);
         } catch (err) {
             setError(err.message || 'Could not start demo');

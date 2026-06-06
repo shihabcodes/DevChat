@@ -10,6 +10,7 @@ export default function ChatArea({
     typingUsers,
     onExplain,
     onMissingKey,
+    onRetry,
     loading,
 }) {
     const bottomRef = useRef(null);
@@ -63,6 +64,7 @@ export default function ChatArea({
                             isOwn={msg.user?._id === currentUser?._id}
                             onExplain={onExplain}
                             onMissingKey={onMissingKey}
+                            onRetry={onRetry}
                         />
                     ))
                 )}

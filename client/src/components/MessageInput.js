@@ -11,7 +11,7 @@ const LANGUAGES = [
     'sql', 'bash', 'json', 'yaml', 'markdown',
 ];
 
-export default function MessageInput({ onSend, onTyping, onStopTyping }) {
+export default function MessageInput({ onSend, onTyping, onStopTyping, disabled = false }) {
     const [content, setContent] = useState('');
     const [codeMode, setCodeMode] = useState(false);
     const [language, setLanguage] = useState('javascript');
@@ -120,7 +120,7 @@ export default function MessageInput({ onSend, onTyping, onStopTyping }) {
 
                 <button
                     onClick={handleSend}
-                    disabled={codeMode ? !codeContent.trim() : !content.trim()}
+                    disabled={disabled || (codeMode ? !codeContent.trim() : !content.trim())}
                     style={{
                         padding: '0.4rem 1rem',
                         borderRadius: 8,
@@ -181,7 +181,8 @@ export default function MessageInput({ onSend, onTyping, onStopTyping }) {
                         handleTyping();
                     }}
                     onKeyDown={handleKeyDown}
-                    placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+                    disabled={disabled}
+                    placeholder={disabled ? 'Reconnecting…' : 'Type a message... (Enter to send, Shift+Enter for new line)'}
                     rows={1}
                     style={{
                         width: '100%',
