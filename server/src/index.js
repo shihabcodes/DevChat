@@ -4,6 +4,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
+const mongoose = require('mongoose');
 
 const env = require('./config/env');
 const logger = require('./config/logger');
@@ -58,10 +59,29 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/keys', keyRoutes);
 app.use('/api/demo', demoRoutes);
 
+const PORT = env.PORT;
+
+// Mongo connect state, exposed to the healthcheck.
+let mongoState = 0; // 0=disconnected, 1=connected, 2=connecting
+mongoose.connection.on('connected', () => {
+    mongoState = 1;
+    logger.info('mongo connected', { host: mongoose.connection.host });
+});
+mongoose.connection.on('disconnected', () => {
+    mongoState = 0;
+    logger.warn('mongo disconnected');
+});
+mongoose.connection.on('reconnected', () => {
+    mongoState = 1;
+    logger.info('mongo reconnected');
+});
+
 app.get('/api/health', (req, res) => {
-    const mongoState = require('mongoose').connection.readyState; // 1 == connected
+    // Always 200 — the platform's healthcheck only needs to know the
+    // process is alive and serving HTTP. The mongo field tells
+    // operators the DB state.
     res.json({
-        status: mongoState === 1 ? 'ok' : 'degraded',
+        status: mongoState === 1 ? 'ok' : (mongoState === 2 ? 'starting' : 'degraded'),
         mongo: mongoState,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
@@ -73,20 +93,27 @@ app.use(errorHandler);
 
 setupSocketHandlers(io);
 
-const PORT = env.PORT;
-
 function start() {
-    return connectDB()
-        .then((conn) => {
-            logger.info('mongo connected', { host: conn.connection.host });
-            return new Promise((resolve, reject) => {
-                server.listen(PORT, '0.0.0.0', () => {
-                    logger.info(`DevChat server listening on :${PORT} (env=${env.NODE_ENV})`);
-                    resolve();
-                });
-                server.once('error', reject);
+    // Start the HTTP server FIRST so the platform healthcheck can
+    // hit /api/health even if Mongo is slow to connect. The health
+    // endpoint reports mongoState so the platform knows the actual
+    // status without having to time out on a hung DB connection.
+    return new Promise((resolve, reject) => {
+        server.listen(PORT, '0.0.0.0', () => {
+            logger.info(`DevChat server listening on :${PORT} (env=${env.NODE_ENV})`);
+            resolve();
+            // Kick off the Mongo connect in the background. If it
+            // fails, the process keeps running so the healthcheck
+            // still responds — the platform can see mongoState: 0
+            // in the response and we log a clear error.
+            mongoState = 2;
+            connectDB().catch((err) => {
+                mongoState = 0;
+                logger.error('mongo connect failed (server still up)', { message: err.message });
             });
         });
+        server.once('error', reject);
+    });
 }
 
 // Graceful shutdown. Closes socket.io first (drains in-flight
@@ -100,7 +127,7 @@ async function shutdown(signal) {
     try {
         io.close();
         await new Promise((resolve) => server.close(resolve));
-        await require('mongoose').disconnect();
+        await mongoose.disconnect();
         logger.info('shutdown complete');
         process.exit(0);
     } catch (err) {
