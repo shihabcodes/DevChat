@@ -84,76 +84,101 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
     }, []);
 
     return (
-        <div className="mt-1">
-            <div className="rounded-[10px] overflow-hidden border border-[#2D2D5E] bg-[#1E1E2E]">
-                <div className="flex items-center justify-between px-3 py-2 bg-black/20 border-b border-[#2D2D5E]">
-                    <span className="text-[0.7rem] font-semibold text-[#A855F7] uppercase tracking-wider font-['JetBrains_Mono',monospace]">
+        <div className="mt-1.5 w-full">
+            {/* Code Box */}
+            <div className="rounded-xl overflow-hidden border border-border bg-[#1A1A30]/50 shadow-md">
+                {/* Code Box Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-bg-dark/40 border-b border-border/60">
+                    <span className="text-[0.68rem] font-bold text-accent-purple uppercase tracking-widest font-mono">
                         {language || 'code'}
                     </span>
-                    <div className="flex gap-1.5">
+                    <div className="flex items-center gap-2">
+                        {/* Explain Button */}
                         <button
                             onClick={handleExplain}
                             disabled={explaining}
-                            className={`px-2 py-1 rounded-md text-[0.7rem] font-semibold border transition-all
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-bold border transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0
                                 ${showExplain
-                                    ? 'border-[rgba(79,70,229,0.4)] bg-[rgba(79,70,229,0.15)] text-[#818CF8]'
-                                    : 'border-[rgba(79,70,229,0.3)] text-[#6366F1] hover:bg-[rgba(79,70,229,0.1)]'}
+                                    ? 'border-primary/50 bg-primary/20 text-[#818CF8]'
+                                    : 'border-primary/20 bg-primary/5 text-primary-light hover:border-primary/50 hover:bg-primary/10'}
                                 ${explaining ? 'opacity-60 cursor-wait' : ''}`}
                         >
-                            {explaining ? '✨ Explaining…' : explanation ? '✨ Hide explanation' : '✨ Explain'}
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l-.813-5.096L3 15l5.096-.813L9 9l.813 5.096L15 15l-5.187.904zM18 10.5l-.5 2.5-.5-2.5-2.5-.5 2.5-.5.5-2.5.5 2.5 2.5.5-2.5.5zM21 4.5l-.25 1.25-.25-1.25-1.25-.25 1.25-.25.25-1.25.25 1.25 1.25.25-1.25.25z" />
+                            </svg>
+                            <span>{explaining ? 'Explaining…' : showExplain ? 'Hide Explanation' : 'Explain Code'}</span>
                         </button>
+
+                        {/* Copy Button */}
                         <button
                             onClick={handleCopy}
-                            className="px-2 py-1 rounded-md text-[0.7rem] font-semibold border border-[#2D2D5E] text-[#9CA3AF] hover:text-white hover:border-[#3D3D6E]"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-bold border border-border/80 text-text-muted hover:text-text-primary hover:border-border-light hover:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                         >
-                            {copied ? '✓ Copied' : 'Copy'}
+                            {copied ? (
+                                <>
+                                    <svg className="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                    <span className="text-success">Copied</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5A3.375 3.375 0 006.375 7.5H5.25M15.75 18.75A2.25 2.25 0 0113.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m10.5-6v-1.5A3.375 3.375 0 0010.5 4.125h-.875m0 0a2.25 2.25 0 00-2.25 2.25V15" />
+                                    </svg>
+                                    <span>Copy</span>
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
-                <div className="overflow-auto max-h-[400px]">
+
+                {/* Code Editor Body */}
+                <div className="overflow-auto max-h-[380px]">
                     {html ? (
                         <div
-                            className="shiki-wrapper text-[0.8rem] leading-[1.7] p-3 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!font-['JetBrains_Mono',monospace]"
+                            className="shiki-wrapper text-[0.8rem] leading-[1.75] p-4 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!font-mono"
                             dangerouslySetInnerHTML={{ __html: html }}
                         />
                     ) : (
-                        <pre className="m-0 p-3 font-['JetBrains_Mono',monospace] text-[0.8rem] leading-[1.7] text-[#E2E8F0]">
+                        <pre className="m-0 p-4 font-mono text-[0.8rem] leading-[1.75] text-[#E2E8F0]">
                             <code>{code}</code>
                         </pre>
                     )}
                 </div>
             </div>
 
+            {/* AI Explanation Area */}
             {showExplain && (
-                <div className="ai-card animate-fade-in mt-2">
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <span className="text-base">✨</span>
-                        <span className="text-[0.75rem] font-bold text-[#A855F7]">AI Explanation</span>
+                <div className="ai-card animate-fade-in mt-3">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-sm">✨</span>
+                        <span className="text-xs font-extrabold uppercase tracking-widest text-accent-purple">AI Explanation</span>
                         {explaining && (
-                            <span className="ml-auto text-[0.65rem] text-[#6B7280] italic">streaming…</span>
+                            <span className="ml-auto text-[0.62rem] text-text-dim font-bold uppercase tracking-wider animate-pulse">Streaming response</span>
                         )}
                     </div>
                     {needsKey ? (
-                        <div className="text-[0.835rem] text-[#D1D5DB]">
-                            <p className="mb-2">To use AI explanations, add an OpenAI API key in <strong>AI Settings</strong> (sidebar bottom).</p>
-                            <p className="text-[#9CA3AF] text-[0.75rem]">
-                                Your key is encrypted at rest and used only to call OpenAI on your behalf. We never log or share it.
+                        <div className="text-[0.82rem] leading-relaxed text-text-muted space-y-2">
+                            <p>To use AI explanations, configure an OpenAI API key in **AI Settings** (sidebar bottom).</p>
+                            <p className="text-[0.72rem] text-text-dim">
+                                Your key is encrypted with AES-256-GCM at rest and sent directly to OpenAI. We do not store or share your key.
                             </p>
                         </div>
                     ) : error ? (
-                        <div className="text-[0.835rem] text-[#FCA5A5]">{error}</div>
+                        <div className="text-[0.82rem] text-danger font-medium">{error}</div>
                     ) : explaining && !explanation ? (
-                        <div className="flex flex-col gap-1.5">
-                            <div className="skeleton h-3.5 w-[90%]" />
-                            <div className="skeleton h-3.5 w-[75%]" />
-                            <div className="skeleton h-3.5 w-[60%]" />
+                        <div className="flex flex-col gap-2 py-1">
+                            <div className="skeleton h-3.5 w-[92%]" />
+                            <div className="skeleton h-3.5 w-[80%]" />
+                            <div className="skeleton h-3.5 w-[65%]" />
                         </div>
                     ) : (
-                        <div className="text-[0.835rem] leading-relaxed text-[#D1D5DB] prose prose-invert prose-sm max-w-none prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none">
+                        <div className="text-[0.82rem] leading-relaxed text-text-primary prose prose-invert prose-sm max-w-none prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none font-medium">
                             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                                 {explanation || ''}
                             </ReactMarkdown>
-                            {explaining && <span className="inline-block w-1.5 h-3.5 bg-[#A855F7] ml-0.5 animate-pulse align-middle" />}
+                            {explaining && <span className="inline-block w-1.5 h-3.5 bg-accent-purple ml-1 animate-pulse align-middle" />}
                         </div>
                     )}
                 </div>

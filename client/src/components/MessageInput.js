@@ -58,96 +58,54 @@ export default function MessageInput({ onSend, onTyping, onStopTyping, disabled 
     };
 
     return (
-        <div style={{
-            borderTop: '1px solid #2D2D5E',
-            padding: '0.75rem 1.25rem',
-            background: '#0F0F23',
-        }}>
-            {/* Code Mode Toggle & Language */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                marginBottom: '0.5rem',
-            }}>
-                <button
-                    onClick={() => setCodeMode(!codeMode)}
-                    style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 6,
-                        border: `1px solid ${codeMode ? '#4F46E5' : '#2D2D5E'}`,
-                        background: codeMode ? 'rgba(79, 70, 229, 0.15)' : 'transparent',
-                        color: codeMode ? '#6366F1' : '#9CA3AF',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        fontFamily: 'JetBrains Mono, monospace',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                    }}
-                >
-                    {'</>'}
-                    <span style={{ fontFamily: 'Inter, sans-serif' }}>
-                        {codeMode ? 'Code Mode' : 'Code'}
-                    </span>
-                </button>
-
-                {codeMode && (
-                    <select
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        style={{
-                            padding: '0.35rem 0.5rem',
-                            borderRadius: 6,
-                            border: '1px solid #2D2D5E',
-                            background: '#13132E',
-                            color: '#A855F7',
-                            fontSize: '0.75rem',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            outline: 'none',
-                            cursor: 'pointer',
-                        }}
+        <div className="border-t border-border/25 p-4 bg-[#0F0F23] flex flex-col gap-3 z-10 shadow-lg">
+            {/* Toolbar Row */}
+            <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    {/* Code Mode Toggle */}
+                    <button
+                        onClick={() => setCodeMode(!codeMode)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0
+                            ${codeMode
+                                ? 'border-primary bg-primary/15 text-primary-light'
+                                : 'border-border text-text-muted hover:text-text-primary'}`}
                     >
-                        {LANGUAGES.map((lang) => (
-                            <option key={lang} value={lang}>{lang}</option>
-                        ))}
-                    </select>
-                )}
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                        </svg>
+                        <span>{codeMode ? 'Code Mode' : 'Share Code'}</span>
+                    </button>
 
-                <div style={{ flex: 1 }} />
+                    {/* Language Selector */}
+                    {codeMode && (
+                        <select
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                            className="px-2.5 py-1.5 rounded-lg border border-border bg-bg-input text-accent-purple text-xs font-mono outline-none cursor-pointer focus:border-primary transition-all"
+                        >
+                            {LANGUAGES.map((lang) => (
+                                <option key={lang} value={lang}>{lang}</option>
+                            ))}
+                        </select>
+                    )}
+                </div>
 
+                {/* Send Button */}
                 <button
                     onClick={handleSend}
                     disabled={disabled || (codeMode ? !codeContent.trim() : !content.trim())}
-                    style={{
-                        padding: '0.4rem 1rem',
-                        borderRadius: 8,
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #4F46E5, #6366F1)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        fontFamily: 'Inter, sans-serif',
-                        opacity: (codeMode ? !codeContent.trim() : !content.trim()) ? 0.4 : 1,
-                        transition: 'all 0.2s',
-                        boxShadow: '0 2px 8px rgba(79, 70, 229, 0.2)',
-                    }}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-200 bg-gradient-to-r from-primary to-primary-light hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_2px_8px_rgba(79,70,229,0.2)] hover:-translate-y-0.5 active:translate-y-0"
                 >
-                    Send
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                    <span>Send</span>
                 </button>
             </div>
 
-            {/* Input Area */}
+            {/* Input Element Container */}
             {codeMode ? (
-                <div style={{
-                    borderRadius: 10,
-                    overflow: 'hidden',
-                    border: '1px solid #2D2D5E',
-                    height: 200,
-                }}>
+                <div className="rounded-xl overflow-hidden border border-border shadow-inner bg-[#1e1e2e] h-[200px]">
                     <MonacoEditor
                         height="200px"
                         language={language}
@@ -184,23 +142,7 @@ export default function MessageInput({ onSend, onTyping, onStopTyping, disabled 
                     disabled={disabled}
                     placeholder={disabled ? 'Reconnecting…' : 'Type a message... (Enter to send, Shift+Enter for new line)'}
                     rows={1}
-                    style={{
-                        width: '100%',
-                        padding: '0.7rem 0.85rem',
-                        borderRadius: 10,
-                        border: '1px solid #2D2D5E',
-                        background: '#13132E',
-                        color: '#F9FAFB',
-                        fontSize: '0.875rem',
-                        fontFamily: 'Inter, sans-serif',
-                        outline: 'none',
-                        resize: 'none',
-                        minHeight: 42,
-                        maxHeight: 130,
-                        transition: 'border-color 0.2s',
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = '#4F46E5')}
-                    onBlur={(e) => (e.target.style.borderColor = '#2D2D5E')}
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-bg-input text-text-primary text-sm outline-none resize-none min-h-[42px] max-h-[130px] focus:border-primary transition-all duration-200 placeholder:text-text-dim"
                 />
             )}
         </div>

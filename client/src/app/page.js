@@ -5,19 +5,6 @@ import { useRouter } from 'next/navigation';
 import { GoogleLogin } from '@react-oauth/google';
 import api, { ApiError } from '@/lib/api';
 
-const inputStyle = {
-    width: '100%',
-    padding: '0.7rem 1rem',
-    borderRadius: 10,
-    border: '1px solid #2D2D5E',
-    background: '#13132E',
-    color: '#F9FAFB',
-    fontSize: '0.9rem',
-    fontFamily: 'Inter, sans-serif',
-    outline: 'none',
-    transition: 'border-color 0.2s',
-};
-
 export default function Home() {
     const router = useRouter();
     const [mode, setMode] = useState('login');
@@ -111,8 +98,6 @@ export default function Home() {
         setDemoLoading(true);
         try {
             const data = await api.startDemo();
-            // Stash the demo messages in sessionStorage so the workspace
-            // page can render them without a second round trip.
             if (data.messages) {
                 sessionStorage.setItem(
                     `devchat_demo_messages_${data.channel._id}`,
@@ -129,82 +114,87 @@ export default function Home() {
     if (checkingAuth) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#0F0F23]">
-                <div className="skeleton w-[200px] h-10 rounded-lg" />
+                <div className="skeleton w-[200px] h-10 rounded-lg animate-pulse" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col" style={{
-            background: 'radial-gradient(ellipse at 50% 0%, rgba(79,70,229,0.15) 0%, #0F0F23 70%)',
-        }}>
-            {/* Top nav */}
-            <header className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#4F46E5] to-[#A855F7] flex items-center justify-center text-sm font-extrabold text-white shadow-[0_4px_16px_rgba(79,70,229,0.3)]">
+        <div className="min-h-screen flex flex-col bg-[#0F0F23] relative overflow-hidden">
+            {/* Ambient background glows */}
+            <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[5%] w-[450px] h-[450px] rounded-full bg-accent-purple/10 blur-[120px] pointer-events-none" />
+
+            {/* Top Navigation Bar */}
+            <header className="px-8 py-5 flex items-center justify-between border-b border-border/30 bg-bg-dark/45 backdrop-blur-md z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center text-sm font-extrabold text-white shadow-[0_4px_20px_rgba(79,70,229,0.35)] transition-transform hover:rotate-3 duration-300">
                         {'</>'}
                     </div>
-                    <span className="text-lg font-extrabold bg-gradient-to-r from-[#F9FAFB] to-[#A855F7] bg-clip-text text-transparent">DevChat</span>
+                    <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-[#F9FAFB] to-[#D8D4FF] bg-clip-text text-transparent">
+                        DevChat
+                    </span>
                 </div>
-                <div className="text-[0.75rem] text-[#6B7280] hidden sm:block">
-                    Real-time chat for developers
+                <div className="text-xs font-semibold text-text-dim uppercase tracking-wider hidden sm:block">
+                    Real-time chat built for developer flow
                 </div>
             </header>
 
-            {/* Hero */}
-            <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pb-12">
-                <div className="w-full max-w-5xl text-center mb-10 animate-fade-in">
-                    <h1 className="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight mb-4 bg-gradient-to-br from-white via-[#D8D4FF] to-[#A855F7] bg-clip-text text-transparent">
+            {/* Content Container */}
+            <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 z-10 max-w-5xl mx-auto w-full">
+                {/* Hero Headers */}
+                <div className="text-center mb-12 animate-fade-in">
+                    <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight tracking-tight mb-5 bg-gradient-to-br from-white via-[#E0DCFF] to-accent-purple bg-clip-text text-transparent">
                         Stop alt-tabbing to ChatGPT.
                     </h1>
-                    <p className="text-base sm:text-lg text-[#9CA3AF] max-w-2xl mx-auto leading-relaxed">
-                        DevChat is a real-time chat platform built for developers. Share code with proper syntax highlighting, get AI explanations streamed in-line, and collaborate with your team without breaking flow.
+                    <p className="text-lg text-text-muted max-w-2xl mx-auto leading-relaxed">
+                        DevChat embeds live code sharing and streaming AI explanations right inside your developer chat workflow. Collaborate in real time without breaking your IDE state.
                     </p>
 
-                    <div className="flex flex-wrap items-center justify-center gap-2 mt-5 text-[0.75rem] text-[#6B7280]">
-                        <span className="px-2.5 py-1 rounded-full bg-[#1A1A3E] border border-[#2D2D5E]">⚡ Real-time WebSockets</span>
-                        <span className="px-2.5 py-1 rounded-full bg-[#1A1A3E] border border-[#2D2D5E]">🎨 Syntax highlighted</span>
-                        <span className="px-2.5 py-1 rounded-full bg-[#1A1A3E] border border-[#2D2D5E]">✨ GPT-4o streaming</span>
-                        <span className="px-2.5 py-1 rounded-full bg-[#1A1A3E] border border-[#2D2D5E]">🔒 Google OAuth</span>
+                    {/* Features Badges */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-6 text-xs font-medium text-text-muted">
+                        <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">⚡ Socket.io WebSockets</span>
+                        <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">🎨 Monaco Editor Syntax</span>
+                        <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">✨ Streamed AI Explanations</span>
+                        <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">🔒 AES-256 Key Encryption</span>
                     </div>
 
-                    <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    {/* Action buttons */}
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
                         <button
                             onClick={handleTryDemo}
                             disabled={demoLoading}
-                            className="px-6 py-3 rounded-xl text-sm font-bold text-white transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-wait"
-                            style={{
-                                background: 'linear-gradient(135deg, #4F46E5, #A855F7)',
-                                boxShadow: '0 8px 32px rgba(79,70,229,0.35)',
-                            }}
+                            className="glow-btn px-7 py-3.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-wait bg-gradient-to-r from-primary to-accent-purple shadow-[0_8px_32px_rgba(79,70,229,0.35)]"
                         >
-                            {demoLoading ? 'Loading demo…' : '🚀 Try the demo (no signup)'}
+                            {demoLoading ? 'Launching demo…' : '🚀 Try the demo (no signup)'}
                         </button>
                         <a
                             href="#auth"
-                            className="px-6 py-3 rounded-xl text-sm font-semibold text-[#D1D5DB] border border-[#2D2D5E] hover:border-[#3D3D6E] hover:text-white transition-colors"
+                            className="px-7 py-3.5 rounded-xl text-sm font-bold text-text-primary border border-border hover:border-border-light hover:bg-white/[0.02] transition-all duration-200"
                         >
                             Create an account
                         </a>
                     </div>
-                    <p className="text-[0.7rem] text-[#6B7280] mt-3">
-                        Demo workspace is pre-seeded with example code & AI explanations. No credit card, expires in 2 hours.
+                    <p className="text-[0.7rem] text-text-dim mt-4">
+                        Demo workspace is pre-seeded with sample chats. No signup required. Expires in 2 hours.
                     </p>
                 </div>
 
+                {/* Forms Section */}
                 <div id="auth" className="w-full max-w-md">
-                    <div className="animate-fade-in">
-                        {/* Auth card */}
-                        <div className="glass rounded-2xl p-7">
-                            <div className="flex gap-1 mb-6 bg-[#13132E] rounded-[10px] p-1">
+                    <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                        {/* Auth Card */}
+                        <div className="glass-card rounded-2xl p-8 shadow-2xl">
+                            {/* Tab switcher */}
+                            <div className="flex gap-1 mb-6 bg-bg-input rounded-xl p-1.5 border border-border/40">
                                 {['login', 'register'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => { setMode(tab); setError(''); }}
-                                        className="flex-1 py-2.5 rounded-lg text-[0.85rem] font-semibold transition-all"
+                                        className="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 uppercase tracking-wider"
                                         style={{
-                                            background: mode === tab ? '#4F46E5' : 'transparent',
-                                            color: mode === tab ? '#fff' : '#9CA3AF',
+                                            background: mode === tab ? 'var(--color-primary)' : 'transparent',
+                                            color: mode === tab ? '#fff' : 'var(--color-text-muted)',
                                         }}
                                     >
                                         {tab === 'login' ? 'Sign In' : 'Sign Up'}
@@ -213,57 +203,56 @@ export default function Home() {
                             </div>
 
                             {error && (
-                                <div className="px-4 py-2.5 rounded-md bg-[rgba(220,38,38,0.1)] border border-[rgba(220,38,38,0.3)] text-[#FCA5A5] text-[0.85rem] mb-4">
+                                <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-red-200 text-xs mb-4 animate-shake">
                                     {error}
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit}>
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 {mode === 'register' && (
-                                    <div className="mb-4">
-                                        <label className="block text-[0.8rem] text-[#9CA3AF] mb-1.5 font-medium">Display Name</label>
+                                    <div>
+                                        <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Display Name</label>
                                         <input
                                             type="text" value={displayName}
                                             onChange={(e) => setDisplayName(e.target.value)}
-                                            placeholder="Your name" required style={inputStyle}
+                                            placeholder="Your name" required 
+                                            className="w-full px-4 py-3 rounded-xl border border-border bg-bg-input text-text-primary text-sm outline-none focus:border-primary transition-all duration-200 placeholder:text-text-dim"
                                         />
                                     </div>
                                 )}
 
-                                <div className="mb-4">
-                                    <label className="block text-[0.8rem] text-[#9CA3AF] mb-1.5 font-medium">Email</label>
+                                <div>
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Email</label>
                                     <input
                                         type="email" value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="you@example.com" required style={inputStyle}
+                                        placeholder="you@example.com" required 
+                                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-input text-text-primary text-sm outline-none focus:border-primary transition-all duration-200 placeholder:text-text-dim"
                                     />
                                 </div>
 
-                                <div className="mb-6">
-                                    <label className="block text-[0.8rem] text-[#9CA3AF] mb-1.5 font-medium">Password</label>
+                                <div>
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Password</label>
                                     <input
                                         type="password" value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="At least 8 characters" required
-                                        minLength={8} style={inputStyle}
+                                        placeholder="Minimum 8 characters" required
+                                        minLength={8} 
+                                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-input text-text-primary text-sm outline-none focus:border-primary transition-all duration-200 placeholder:text-text-dim"
                                     />
                                 </div>
 
                                 <button
                                     type="submit" disabled={loading}
-                                    className="w-full py-3 rounded-[10px] text-[0.9rem] font-semibold text-white transition-all disabled:opacity-60 disabled:cursor-wait hover:-translate-y-px"
-                                    style={{
-                                        background: loading ? '#3730A3' : 'linear-gradient(135deg, #4F46E5, #6366F1)',
-                                        boxShadow: '0 4px 16px rgba(79,70,229,0.3)',
-                                    }}
+                                    className="glow-btn w-full py-3 rounded-xl text-sm font-semibold text-white transition-all bg-gradient-to-r from-primary to-primary-light disabled:opacity-50 disabled:cursor-wait"
                                 >
-                                    {loading ? '…' : mode === 'login' ? 'Sign In' : 'Create Account'}
+                                    {loading ? 'Processing…' : mode === 'login' ? 'Sign In' : 'Create Account'}
                                 </button>
 
-                                <div className="flex items-center my-5">
-                                    <div className="flex-1 h-px bg-[#2D2D5E]" />
-                                    <span className="px-4 text-[0.8rem] text-[#9CA3AF]">OR</span>
-                                    <div className="flex-1 h-px bg-[#2D2D5E]" />
+                                <div className="flex items-center my-6">
+                                    <div className="flex-1 h-px bg-border/40" />
+                                    <span className="px-4 text-xs font-semibold text-text-dim tracking-widest uppercase">OR</span>
+                                    <div className="flex-1 h-px bg-border/40" />
                                 </div>
 
                                 <div className="flex justify-center">
@@ -277,19 +266,19 @@ export default function Home() {
                             </form>
                         </div>
 
-                        {/* Invite */}
-                        <div className="glass rounded-2xl p-5 mt-4">
-                            <p className="text-[0.8rem] text-[#9CA3AF] mb-2.5 text-center">Have an invite code?</p>
+                        {/* Invite Form */}
+                        <div className="glass-card rounded-2xl p-6 mt-4 shadow-lg border border-border/30">
+                            <p className="text-xs font-bold text-text-muted mb-3 text-center uppercase tracking-wider">Have an invite code?</p>
                             <form onSubmit={handleJoinWorkspace} className="flex gap-2">
                                 <input
                                     type="text" value={inviteCode}
                                     onChange={(e) => setInviteCode(e.target.value)}
                                     placeholder="Paste invite code"
-                                    style={{ ...inputStyle, flex: 1 }}
+                                    className="flex-1 px-4 py-2.5 rounded-xl border border-border bg-bg-input text-text-primary text-xs outline-none focus:border-primary transition-all duration-200 placeholder:text-text-dim"
                                 />
                                 <button
                                     type="submit" disabled={loading || !inviteCode}
-                                    className="px-4 py-2.5 rounded-[10px] text-[0.85rem] font-semibold border border-[#2D2D5E] text-[#A855F7] hover:border-[#A855F7] disabled:opacity-50 transition-colors"
+                                    className="px-5 py-2.5 rounded-xl text-xs font-bold border border-border-light text-[#A855F7] hover:border-[#A855F7] hover:bg-accent-purple/5 disabled:opacity-50 transition-all duration-200"
                                 >
                                     Join
                                 </button>
@@ -298,8 +287,9 @@ export default function Home() {
                     </div>
                 </div>
 
-                <footer className="mt-12 text-[0.7rem] text-[#6B7280] text-center">
-                    Built with Next.js, Socket.io, MongoDB, and OpenAI. MIT licensed.
+                {/* Footer */}
+                <footer className="mt-16 text-[0.7rem] text-text-dim text-center">
+                    Built with Next.js, WebSockets, MongoDB, and OpenAI.
                 </footer>
             </main>
         </div>
