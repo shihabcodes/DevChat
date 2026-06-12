@@ -126,33 +126,35 @@ export default function Home() {
             <div className="absolute bottom-[-10%] right-[5%] w-[450px] h-[450px] rounded-full bg-accent-purple/10 blur-[120px] pointer-events-none" />
 
             {/* Top Navigation Bar */}
-            <header className="px-8 py-5 flex items-center justify-between border-b border-border/30 bg-bg-dark/45 backdrop-blur-md z-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center text-sm font-extrabold text-white shadow-[0_4px_20px_rgba(79,70,229,0.35)] transition-transform hover:rotate-3 duration-300">
-                        {'</>'}
+            <header className="w-full border-b border-border/30 bg-bg-dark/45 backdrop-blur-md z-10">
+                <div className="max-w-5xl mx-auto px-6 sm:px-8 py-5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent-purple flex items-center justify-center text-sm font-extrabold text-white shadow-[0_4px_20px_rgba(79,70,229,0.35)] transition-transform hover:rotate-3 duration-300">
+                            {'</>'}
+                        </div>
+                        <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-[#D8D4FF] bg-clip-text text-transparent">
+                            DevChat
+                        </span>
                     </div>
-                    <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-[#F9FAFB] to-[#D8D4FF] bg-clip-text text-transparent">
-                        DevChat
-                    </span>
-                </div>
-                <div className="text-xs font-semibold text-text-dim uppercase tracking-wider hidden sm:block">
-                    Real-time chat built for developer flow
+                    <div className="text-xs font-semibold text-text-dim uppercase tracking-wider hidden sm:block">
+                        Real-time chat built for developer flow
+                    </div>
                 </div>
             </header>
 
             {/* Content Container */}
-            <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-12 z-10 max-w-5xl mx-auto w-full">
-                {/* Hero Headers */}
-                <div className="text-center mb-12 animate-fade-in">
-                    <h1 className="text-4xl sm:text-6xl font-extrabold leading-tight tracking-tight mb-5 bg-gradient-to-br from-white via-[#E0DCFF] to-accent-purple bg-clip-text text-transparent">
+            <main className="flex-1 flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-12 lg:gap-16 px-6 sm:px-8 py-12 z-10 max-w-5xl mx-auto w-full self-center">
+                {/* Hero Headers (Left Side on Desktop) */}
+                <div className="text-center lg:text-left lg:max-w-xl animate-fade-in">
+                    <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight tracking-tight mb-5 bg-gradient-to-br from-white via-[#E0DCFF] to-accent-purple bg-clip-text text-transparent">
                         Stop alt-tabbing to ChatGPT.
                     </h1>
-                    <p className="text-lg text-text-muted max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-base sm:text-lg text-text-muted max-w-2xl mx-auto lg:mx-0 leading-relaxed">
                         DevChat embeds live code sharing and streaming AI explanations right inside your developer chat workflow. Collaborate in real time without breaking your IDE state.
                     </p>
 
                     {/* Features Badges */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 mt-6 text-xs font-medium text-text-muted">
+                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 mt-6 text-xs font-medium text-text-muted">
                         <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">⚡ Socket.io WebSockets</span>
                         <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">🎨 Monaco Editor Syntax</span>
                         <span className="px-3 py-1.5 rounded-full bg-bg-surface/50 border border-border/50 backdrop-blur-sm shadow-sm">✨ Streamed AI Explanations</span>
@@ -160,17 +162,17 @@ export default function Home() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
                         <button
                             onClick={handleTryDemo}
                             disabled={demoLoading}
-                            className="glow-btn px-7 py-3.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-wait bg-gradient-to-r from-primary to-accent-purple shadow-[0_8px_32px_rgba(79,70,229,0.35)]"
+                            className="glow-btn px-7 py-3.5 w-full sm:w-auto rounded-xl text-sm font-bold text-white transition-all disabled:opacity-60 disabled:cursor-wait bg-gradient-to-r from-primary to-accent-purple shadow-[0_8px_32px_rgba(79,70,229,0.35)]"
                         >
                             {demoLoading ? 'Launching demo…' : '🚀 Try the demo (no signup)'}
                         </button>
                         <a
                             href="#auth"
-                            className="px-7 py-3.5 rounded-xl text-sm font-bold text-text-primary border border-border hover:border-border-light hover:bg-white/[0.02] transition-all duration-200"
+                            className="px-7 py-3.5 w-full sm:w-auto text-center rounded-xl text-sm font-bold text-text-primary border border-border hover:border-border-light hover:bg-white/[0.02] transition-all duration-200"
                         >
                             Create an account
                         </a>
@@ -180,48 +182,47 @@ export default function Home() {
                     </p>
                 </div>
 
-                {/* Forms Section */}
-                <div id="auth" className="w-full max-w-md">
-                    <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                        {/* Auth Card */}
-                        <div className="glass-card rounded-2xl p-8 shadow-2xl">
-                            {/* Tab switcher */}
-                            <div className="flex gap-1 mb-6 bg-bg-input rounded-xl p-1.5 border border-border/40">
-                                {['login', 'register'].map((tab) => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => { setMode(tab); setError(''); }}
-                                        className="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 uppercase tracking-wider"
-                                        style={{
-                                            background: mode === tab ? 'var(--color-primary)' : 'transparent',
-                                            color: mode === tab ? '#fff' : 'var(--color-text-muted)',
-                                        }}
-                                    >
-                                        {tab === 'login' ? 'Sign In' : 'Sign Up'}
-                                    </button>
-                                ))}
-                            </div>
+                {/* Forms Section (Right Side on Desktop) */}
+                <div id="auth" className="w-full max-w-md animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                    {/* Auth Card */}
+                    <div className="glass-card rounded-2xl p-8 shadow-2xl">
+                        {/* Tab switcher */}
+                        <div className="flex gap-1 mb-6 bg-bg-input rounded-xl p-1.5 border border-border/40">
+                            {['login', 'register'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => { setMode(tab); setError(''); }}
+                                    className="flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 uppercase tracking-wider"
+                                    style={{
+                                        background: mode === tab ? 'var(--color-primary)' : 'transparent',
+                                        color: mode === tab ? '#fff' : 'var(--color-text-muted)',
+                                    }}
+                                >
+                                    {tab === 'login' ? 'Sign In' : 'Sign Up'}
+                                </button>
+                            ))}
+                        </div>
 
-                            {error && (
-                                <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-red-200 text-xs mb-4 animate-shake">
-                                    {error}
+                        {error && (
+                            <div className="px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-red-200 text-xs mb-4 animate-shake">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {mode === 'register' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Display Name</label>
+                                    <input
+                                        type="text" value={displayName}
+                                        onChange={(e) => setDisplayName(e.target.value)}
+                                        placeholder="Your name" required 
+                                        className="w-full px-4 py-3 rounded-xl border border-border bg-bg-input text-text-primary text-sm outline-none focus:border-primary transition-all duration-200 placeholder:text-text-dim"
+                                    />
                                 </div>
                             )}
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                {mode === 'register' && (
-                                    <div>
-                                        <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Display Name</label>
-                                        <input
-                                            type="text" value={displayName}
-                                            onChange={(e) => setDisplayName(e.target.value)}
-                                            placeholder="Your name" required 
-                                            className="w-full px-4 py-3 rounded-xl border border-border bg-bg-input text-text-primary text-sm outline-none focus:border-primary transition-all duration-200 placeholder:text-text-dim"
-                                        />
-                                    </div>
-                                )}
-
-                                <div>
+                            <div>
                                     <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Email</label>
                                     <input
                                         type="email" value={email}
@@ -284,14 +285,15 @@ export default function Home() {
                                 </button>
                             </form>
                         </div>
-                    </div>
                 </div>
-
-                {/* Footer */}
-                <footer className="mt-16 text-[0.7rem] text-text-dim text-center">
-                    Built with Next.js, WebSockets, MongoDB, and OpenAI.
-                </footer>
             </main>
+
+            {/* Centered Footer */}
+            <footer className="w-full border-t border-border/10 py-6 text-center text-[0.7rem] text-text-dim z-10">
+                <div className="max-w-5xl mx-auto px-6 sm:px-8">
+                    Built with Next.js, WebSockets, MongoDB, and OpenAI.
+                </div>
+            </footer>
         </div>
     );
 }
