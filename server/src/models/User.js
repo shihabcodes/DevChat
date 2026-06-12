@@ -11,9 +11,9 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        // Always required at the schema level. The auth route enforces
-        // that one of (password, googleId) is set per signup path.
-        required: true,
+        required: function () {
+            return !this.googleId;
+        },
         minlength: 8,
     },
     googleId: {
