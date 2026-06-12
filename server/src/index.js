@@ -94,6 +94,13 @@ app.use(errorHandler);
 setupSocketHandlers(io);
 
 function start() {
+    // --- Boot diagnostics (visible in Railway deploy logs) ---
+    console.log('[boot] DevChat server starting...');
+    console.log('[boot] NODE_ENV=%s, PORT=%s', env.NODE_ENV, PORT);
+    console.log('[boot] MONGODB_URI set: %s', !!process.env.MONGODB_URI);
+    console.log('[boot] JWT_SECRET length: %d', (process.env.JWT_SECRET || '').length);
+    console.log('[boot] ALLOWED_ORIGINS: %s', JSON.stringify(env.ALLOWED_ORIGINS));
+
     // Start the HTTP server FIRST so the platform healthcheck can
     // hit /api/health even if Mongo is slow to connect. The health
     // endpoint reports mongoState so the platform knows the actual
@@ -101,6 +108,7 @@ function start() {
     return new Promise((resolve, reject) => {
         server.listen(PORT, '0.0.0.0', () => {
             logger.info(`DevChat server listening on :${PORT} (env=${env.NODE_ENV})`);
+            console.log('[boot] HTTP server bound to 0.0.0.0:%d — healthcheck should now respond', PORT);
             resolve();
             // Kick off the Mongo connect in the background. If it
             // fails, the process keeps running so the healthcheck
@@ -112,7 +120,10 @@ function start() {
                 logger.error('mongo connect failed (server still up)', { message: err.message });
             });
         });
-        server.once('error', reject);
+        server.once('error', (err) => {
+            console.error('[boot] HTTP server failed to bind:', err.message);
+            reject(err);
+        });
     });
 }
 
