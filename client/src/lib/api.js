@@ -134,6 +134,14 @@ class ApiClient {
                     { status: res.status, code: data && data.code }
                 );
             }
+            const contentType = res.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                const body = await res.json();
+                if (body.explanation) {
+                    if (onDelta) onDelta(body.explanation, body.explanation);
+                }
+                return { text: body.explanation || '', full: body.explanation || '' };
+            }
             if (!res.body) {
                 throw new ApiError('No response body', { status: 502 });
             }
@@ -142,7 +150,6 @@ class ApiClient {
             let buffer = '';
             let full = '';
             let explanation = '';
-            let highlightedHtml = null;
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;

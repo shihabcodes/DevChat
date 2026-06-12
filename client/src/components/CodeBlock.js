@@ -35,6 +35,8 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
         } catch {/* ignore */}
     };
 
+    const cancelledRef = useRef(false);
+
     const handleExplain = async () => {
         if (explanation) {
             setShowExplain((v) => !v);
@@ -46,6 +48,7 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
         setError(null);
         setNeedsKey(false);
         setExplanation('');
+        cancelledRef.current = false;
         try {
             const stream = api.explainCodeStream({
                 messageId,
@@ -55,9 +58,11 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
             });
             streamRef.current = stream;
             const { text } = await stream.result;
-            if (!text) setExplanation(streamRef.current?._lastFull || '');
+            if (cancelledRef.current) return;
+            if (text) setExplanation(text);
             setExplaining(false);
         } catch (err) {
+            if (cancelledRef.current) return;
             setExplaining(false);
             if (err instanceof ApiError && err.code === 'NO_OPENAI_KEY') {
                 setNeedsKey(true);
@@ -71,7 +76,11 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
     };
 
     useEffect(() => () => {
-        if (streamRef.current) streamRef.current.cancel();
+        cancelledRef.current = true;
+        if (streamRef.current) {
+            streamRef.current.cancel();
+            streamRef.current = null;
+        }
     }, []);
 
     return (
