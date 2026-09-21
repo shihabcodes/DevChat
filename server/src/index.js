@@ -77,7 +77,7 @@ mongoose.connection.on('reconnected', () => {
 });
 
 app.get('/api/health', (req, res) => {
-    // Always 200 — the platform's healthcheck only needs to know the
+    // Always 200: the platform's healthcheck only needs to know the
     // process is alive and serving HTTP. The mongo field tells
     // operators the DB state.
     res.json({
@@ -108,11 +108,11 @@ function start() {
     return new Promise((resolve, reject) => {
         server.listen(PORT, '0.0.0.0', () => {
             logger.info(`DevChat server listening on :${PORT} (env=${env.NODE_ENV})`);
-            console.log('[boot] HTTP server bound to 0.0.0.0:%d — healthcheck should now respond', PORT);
+            console.log('[boot] HTTP server bound to 0.0.0.0:%d : healthcheck should now respond', PORT);
             resolve();
             // Kick off the Mongo connect in the background. If it
             // fails, the process keeps running so the healthcheck
-            // still responds — the platform can see mongoState: 0
+            // still responds: the platform can see mongoState: 0
             // in the response and we log a clear error.
             mongoState = 2;
             connectDB().catch((err) => {
@@ -151,7 +151,7 @@ process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Centralized last-resort handlers. We DO NOT swallow errors here
 // in production. The TTY/EIO workaround that lived in this file
-// previously has been removed — it was a development-environment
+// previously has been removed: it was a development-environment
 // issue, not a production concern.
 process.on('unhandledRejection', (reason) => {
     logger.error('unhandledRejection', {

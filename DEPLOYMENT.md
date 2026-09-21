@@ -28,12 +28,12 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"  # J
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"  # OPENAI_KEY_ENCRYPTION_SECRET
 ```
 
-Save both — you'll paste them into Railway.
+Save both : you'll paste them into Railway.
 
 ## 3. Deploy the backend to Railway
 
 1. Go to https://railway.app/new → **Deploy from GitHub repo** → pick `shihabcodes/DevChat`.
-2. **Set the Root Directory to `server`** (Settings → Source → Root Directory). This is required — the Node project lives in `server/`, not at the repo root. The repo also ships a root-level `nixpacks.toml` as a fallback, but setting the Root Directory in the UI is the official path and avoids edge cases.
+2. **Set the Root Directory to `server`** (Settings → Source → Root Directory). This is required : the Node project lives in `server/`, not at the repo root. The repo also ships a root-level `nixpacks.toml` as a fallback, but setting the Root Directory in the UI is the official path and avoids edge cases.
 3. Railway auto-detects Node and uses the `Procfile` / `railway.json` in `server/`. No Dockerfile needed.
 4. In the **Variables** tab, set:
    ```
@@ -46,9 +46,9 @@ Save both — you'll paste them into Railway.
    GOOGLE_CLIENT_ID=<from step 5 below, can leave blank for now>
    DEMO_TTL_HOURS=2
    ```
-   > `PORT` is set automatically by Railway — don't override it.
-5. Deploy. Watch the logs — you should see `[info] DevChat server listening on :<port> (env=production)`.
-6. Click the generated Railway domain (something like `devchat-production.up.railway.app`). Visit `https://<railway-domain>/api/health` — you should get:
+   > `PORT` is set automatically by Railway : don't override it.
+5. Deploy. Watch the logs : you should see `[info] DevChat server listening on :<port> (env=production)`.
+6. Click the generated Railway domain (something like `devchat-production.up.railway.app`). Visit `https://<railway-domain>/api/health` : you should get:
    ```json
    {"status":"ok","mongo":1,"timestamp":"...","uptime":...}
    ```
@@ -80,7 +80,7 @@ Save both — you'll paste them into Railway.
 
 1. Open the Vercel URL in an incognito window.
 2. Click **🚀 Try the demo (no signup)**. You should land in a workspace with 2 pre-baked code snippets.
-3. Click **✨ Explain** on either snippet — you'll see a "no key" message pointing to AI Settings. (The cached explanation also renders immediately because it's pre-baked.)
+3. Click **✨ Explain** on either snippet : you'll see a "no key" message pointing to AI Settings. (The cached explanation also renders immediately because it's pre-baked.)
 4. Click **⚡ Add OpenAI key** in the sidebar. Paste your `sk-...` key. Click **Test**. If it works, click **Add key**.
 5. Now click **✨ Explain** on a fresh code snippet (send one in code mode). Watch the AI response stream in.
 6. To create a real account: sign out → **Create Account**. Verify the welcome bot seed lands in `#general`.
@@ -89,7 +89,7 @@ Save both — you'll paste them into Railway.
 
 - **MongoDB Atlas**: Database → … → Schedule Snapshots. Free tier supports daily snapshots.
 - **Uptime monitor**: Sign up at https://betterstack.com/uptime (free tier) and point it at `https://<railway-domain>/api/health`. Get alerted on downtime.
-- **Error tracking**: Optional but recommended. Sign up at https://sentry.io (free tier), create a Node + Next.js project, set `SENTRY_DSN` env vars on Railway and Vercel. (Not wired in by default yet — see TODO in code.)
+- **Error tracking**: Optional but recommended. Sign up at https://sentry.io (free tier), create a Node + Next.js project, set `SENTRY_DSN` env vars on Railway and Vercel. (Not wired in by default yet : see TODO in code.)
 
 ## 8. Local development
 
@@ -121,7 +121,7 @@ npm run dev            # http://localhost:3000
 - Railway: ~$5/mo (Hobby plan covers it)
 - Vercel: $0 (Hobby plan)
 - MongoDB Atlas: $0 (M0 free tier; upgrade to M10 at scale, ~$10/mo)
-- OpenAI: $0 to you — users bring their own keys
+- OpenAI: $0 to you : users bring their own keys
 - **Total: ~$5/mo**
 
 ## Future improvements (not yet implemented)

@@ -28,10 +28,10 @@ const WELCOME_TEXT = `👋 Welcome to DevChat!
 
 This is **#general** in your new workspace. Here's what you can do:
 
-- **Send code** — click the \`</>\` button to switch to code mode with the Monaco editor
-- **✨ Explain** — click the button on any code block to get an AI explanation streamed in
-- **Invite teammates** — click 🔗 in the sidebar to copy an invite code
-- **Add your OpenAI key** — click ⚡ in the sidebar to enable AI features (uses your own key, encrypted at rest)
+- **Send code** : click the \`</>\` button to switch to code mode with the Monaco editor
+- **✨ Explain** : click the button on any code block to get an AI explanation streamed in
+- **Invite teammates** : click 🔗 in the sidebar to copy an invite code
+- **Add your OpenAI key** : click ⚡ in the sidebar to enable AI features (uses your own key, encrypted at rest)
 
 Have fun!`;
 
@@ -46,7 +46,7 @@ const WELCOME_TIP = `💡 **Try it now:** switch to code mode with the \`</>\` b
 
 // The "DevChat Bot" user. Lazily created on first real signup and
 // reused for every welcome message after that. We use a 64-byte
-// random password that no human will ever type — the bot has no
+// random password that no human will ever type : the bot has no
 // login surface. The password is required by the schema.
 async function getOrCreateBot() {
     const email = 'bot@devchat.local';
@@ -182,7 +182,7 @@ router.post('/google', authLimiter, validate(schemas.google), async (req, res, n
             user = await User.findOne({ email: normalized });
             if (user) {
                 // Account already exists by email. Refuse to silently link
-                // — that would let an attacker squat an email and then
+                // - that would let an attacker squat an email and then
                 // pull the real owner into the attacker's account.
                 if (user.password) {
                     return res.status(409).json({

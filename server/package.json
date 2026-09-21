@@ -1,7 +1,7 @@
 {
   "name": "devchat-server",
   "version": "1.0.0",
-  "description": "DevChat backend — Express + Socket.io + MongoDB",
+  "description": "DevChat backend : Express + Socket.io + MongoDB",
   "main": "src/index.js",
   "engines": {
     "node": ">=18.0.0"

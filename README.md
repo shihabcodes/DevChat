@@ -1,8 +1,8 @@
 <div align="center">
 
-# DevChat — Real-Time Developer Chat
+# DevChat : Real-Time Developer Chat
 
-**Real-time chat built for developers. Share code with syntax highlighting, stream AI explanations in-line, collaborate faster — without alt-tabbing to ChatGPT.**
+**Real-time chat built for developers. Share code with syntax highlighting, stream AI explanations in-line, collaborate faster without alt-tabbing to ChatGPT.**
 
 [🚀 Live Demo](https://dev-chat-virid.vercel.app) · [📚 Deployment Guide](./DEPLOYMENT.md) · [🐛 Report a Bug](https://github.com/shihabcodes/DevChat/issues/new)
 
@@ -20,19 +20,19 @@
 
 ## Features
 
-- 💬 **Real-time messaging** via WebSockets (Socket.io) — with **optimistic send** and an **automatic reconnect banner**
+- 💬 **Real-time messaging** via WebSockets (Socket.io) : with **optimistic send** and an **automatic reconnect banner**
 - 🖥️ **Syntax-highlighted code** with **Shiki** (the same engine that powers VS Code's docs), 20+ languages
-- ✨ **AI explanations** — click "Explain" on any code block, get a **streamed** GPT-4o-mini response (you bring your own OpenAI key, encrypted at rest)
-- ⚡ **AI cache** — explanations are saved to the message, so the second time is instant (and free)
-- 🏢 **Workspaces & Channels** — create teams, organize conversations by topic
-- 🟢 **Presence indicators** — see who's online in real-time
-- ⌠ **Typing indicators** — "Alice is typing..."
-- 🔗 **Invite codes** — share a code to invite teammates
+- ✨ **AI explanations** : click "Explain" on any code block, get a **streamed** GPT-4o-mini response (you bring your own OpenAI key, encrypted at rest)
+- ⚡ **AI cache** : explanations are saved to the message, so the second time is instant (and free)
+- 🏢 **Workspaces & Channels** : create teams, organize conversations by topic
+- 🟢 **Presence indicators** : see who's online in real-time
+- ⌠ **Typing indicators** : "Alice is typing..."
+- 🔗 **Invite codes** : share a code to invite teammates
 - 🔒 **Google OAuth** + email/password
-- 🚀 **Try-the-demo mode** — no signup, full workspace pre-seeded with code samples and cached AI explanations
-- 📱 **Mobile-friendly** — sidebar becomes a slide-out drawer on small screens
-- 🛡️ **React error boundary** — a single component crash never blanks the whole UI
-- 🌙 **Dark-mode first** — built for developers who live in the terminal
+- 🚀 **Try-the-demo mode** : no signup, full workspace pre-seeded with code samples and cached AI explanations
+- 📱 **Mobile-friendly** : sidebar becomes a slide-out drawer on small screens
+- 🛡️ **React error boundary** : a single component crash never blanks the whole UI
+- 🌙 **Dark-mode first** : built for developers who live in the terminal
 
 ## Tech Stack
 
@@ -72,21 +72,21 @@ cd ../client && npm install
 ```bash
 # Server
 cp server/.env.example server/.env
-# Edit server/.env — set MONGODB_URI and a real JWT_SECRET (>= 32 chars)
+# Edit server/.env : set MONGODB_URI and a real JWT_SECRET (>= 32 chars)
 
 # Client
 cp client/.env.example client/.env.local
-# Edit client/.env.local — leave NEXT_PUBLIC_API_URL pointing at the local backend
+# Edit client/.env.local : leave NEXT_PUBLIC_API_URL pointing at the local backend
 ```
 
 ### 3. Run
 
 ```bash
-# Terminal 1 — backend
+# Terminal 1 : backend
 cd server && npm run dev
 # → http://localhost:5001
 
-# Terminal 2 — frontend
+# Terminal 2 : frontend
 cd client && npm run dev
 # → http://localhost:3000
 ```
@@ -154,7 +154,7 @@ DevChat is built with the assumption that a hostile user is poking at every endp
 - **Request body size** capped at 64 KB
 - **Zod** input validation on every route + socket payload
 - **JWT_SECRET** runtime check: server refuses to boot in production with a placeholder secret
-- **Per-route authorization middleware** — no IDOR, no implicit cross-tenant access
+- **Per-route authorization middleware** : no IDOR, no implicit cross-tenant access
 - **Per-route + global rate limiting** (express-rate-limit)
 - **Disposable email blocklist** on signup
 - **OpenAI keys** encrypted at rest with AES-256-GCM (random IV per write, auth tag verified on read)
@@ -177,4 +177,4 @@ Developers context-switch to ChatGPT to ask about code shared in chat. DevChat e
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT : see [LICENSE](./LICENSE).

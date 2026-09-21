@@ -36,7 +36,7 @@ const SAMPLE_AI_EXPLANATION = `This is the classic **debounce** pattern. It ensu
 - It's *different* from throttling, which fires at a fixed rate no matter what.
 
 **Watch out for**
-- The trailing-edge behavior means the first call is delayed — if you need the leading edge, you have to write it yourself.
+- The trailing-edge behavior means the first call is delayed : if you need the leading edge, you have to write it yourself.
 - Forgetting \`clearTimeout\` causes stale timers to fire after the component unmounts (in React, this leaks).`;
 
 const SAMPLE_CODE_2 = `import { useEffect, useState } from 'react';
@@ -54,7 +54,7 @@ const SAMPLE_AI_EXPLANATION_2 = `A small **React hook** that returns a value tha
 
 **The interesting part is the cleanup**
 - \`useEffect\` returns \`() => clearTimeout(t)\`. React calls this cleanup before the effect runs again (on \`value\` change) *and* on unmount.
-- That's why the timer is always cancelled — no leaked timeouts.
+- That's why the timer is always cancelled : no leaked timeouts.
 
 **Use it for**
 - Live-search inputs (don't query on every keystroke).
@@ -121,7 +121,7 @@ async function seedChannel(channelId) {
             createdAt: t(18),
         }),
         Message.create({
-            content: 'yeah that would help — the FK ordering is the tricky part',
+            content: 'yeah that would help - the FK ordering is the tricky part',
             type: 'text',
             channel: channelId,
             user: guestUserId,

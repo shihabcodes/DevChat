@@ -295,8 +295,32 @@ export default function Home() {
                     </button>
                 </div>
 
+                {/* Feature Micro-Highlights Strip */}
+                <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-8 mb-6 text-xs font-mono text-[#a1a1aa] px-4">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#222226] bg-[#0c0c0e]/80 shadow-sm">
+                        <span className="text-[#52a8ff]">⚡</span>
+                        <span className="text-white font-medium">Sub-50ms</span>
+                        <span className="text-[#71717a]">WebSockets</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#222226] bg-[#0c0c0e]/80 shadow-sm">
+                        <span className="text-[#10b981]">✨</span>
+                        <span className="text-white font-medium">In-Line</span>
+                        <span className="text-[#71717a]">AI Explanations</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#222226] bg-[#0c0c0e]/80 shadow-sm">
+                        <span className="text-[#38bdf8]">🎨</span>
+                        <span className="text-white font-medium">VS Code</span>
+                        <span className="text-[#71717a]">Shiki Engine</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#222226] bg-[#0c0c0e]/80 shadow-sm">
+                        <span className="text-[#f59e0b]">🔒</span>
+                        <span className="text-white font-medium">AES-256</span>
+                        <span className="text-[#71717a]">Encrypted</span>
+                    </div>
+                </div>
+
                 {/* Scroll Down Indicator - Anchored at the bottom of the hero viewport */}
-                <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2">
+                <div className="absolute bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2">
                     <a
                         href="#preview"
                         className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#27272a] bg-[#0c0c0e]/90 hover:bg-[#18181b] hover:border-[#52a8ff]/50 text-[#a1a1aa] hover:text-white text-xs font-mono backdrop-blur-md transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.5)] group"
@@ -309,7 +333,12 @@ export default function Home() {
             </section>
 
             {/* PAGE 2: Interactive IDE Preview Section (Full Viewport Centered - 75% Width) */}
-            <section id="preview" className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-24 border-t border-[#18181b] relative">
+            <section id="preview" className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-24 border-t border-[#18181b] relative overflow-hidden">
+                {/* Background Ambient Glow for IDE Widget */}
+                <div className="pointer-events-none absolute inset-0 -z-10 flex items-center justify-center">
+                    <div className="preview-glow"></div>
+                </div>
+
                 {/* Section Header */}
                 <div className="text-center max-w-3xl mx-auto mb-14">
                     <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-3">

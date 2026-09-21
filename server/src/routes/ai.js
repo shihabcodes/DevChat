@@ -39,7 +39,7 @@ async function renderHighlightedCode(code, language) {
         return hl.codeToHtml(code, { lang, theme: 'github-dark' });
     } catch {
         // Fallback: escaped <pre><code> with line numbers. Never
-        // throw on rendering — we always want to return *something*.
+        // throw on rendering: we always want to return *something*.
         const escaped = code
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
