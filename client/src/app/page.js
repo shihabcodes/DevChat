@@ -186,11 +186,11 @@ export default function Home() {
                 <div className="hero-glow"></div>
             </div>
 
-            {/* Navigation */}
+            {/* Navigation Bar */}
             <header className="sticky top-0 z-40 w-full border-b border-[#1f1f1f] bg-black/80 backdrop-blur-md">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-                    <a href="#" className="flex items-center gap-2.5 group">
-                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] text-[#52a8ff] text-xs font-mono font-bold group-hover:border-[#52a8ff]/50 transition-colors">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+                    <a href="#" className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-mono font-bold">
                             &lt;/&gt;
                         </span>
                         <span className="font-semibold text-sm tracking-tight text-white">
@@ -198,25 +198,19 @@ export default function Home() {
                         </span>
                     </a>
 
-                    <nav className="hidden md:flex items-center gap-6 text-xs text-[#a1a1a1]">
-                        <a href="#preview" className="hover:text-white transition-colors">Preview</a>
-                        <a href="#features" className="hover:text-white transition-colors">Features</a>
-                        <a href="#architecture" className="hover:text-white transition-colors">Architecture</a>
-                    </nav>
-
                     <div className="flex items-center gap-3">
                         <a
                             href="https://github.com/shihabcodes/DevChat"
                             target="_blank"
                             rel="noreferrer"
-                            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] text-[#a1a1a1] hover:text-white text-xs font-mono transition-colors"
+                            className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] text-[#a1a1a1] hover:text-white text-xs font-mono transition-colors"
                         >
-                            <span>★ Star</span>
+                            <span>★ Star on GitHub</span>
                         </a>
 
                         <button
                             onClick={() => { setMode('login'); setAuthModalOpen(true); }}
-                            className="text-xs text-[#a1a1a1] hover:text-white transition-colors px-2 py-1"
+                            className="text-xs text-[#a1a1a1] hover:text-white transition-colors px-2 py-1.5"
                         >
                             Sign In
                         </button>
@@ -224,7 +218,7 @@ export default function Home() {
                         <button
                             onClick={handleTryDemo}
                             disabled={demoLoading}
-                            className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-[#e8e8e8] transition-all disabled:opacity-60"
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-[#e4e4e7] transition-all disabled:opacity-60"
                         >
                             <span>{demoLoading ? 'Launching…' : 'Try Demo'}</span>
                             <span>→</span>
@@ -234,9 +228,9 @@ export default function Home() {
             </header>
 
             {/* Hero Section */}
-            <main className="flex-1 flex flex-col items-center pt-14 pb-16 px-4 sm:px-6 text-center max-w-4xl mx-auto w-full">
+            <main className="flex-1 flex flex-col items-center pt-16 pb-20 px-4 sm:px-6 text-center max-w-4xl mx-auto w-full">
                 {/* Status Pill */}
-                <div className="inline-flex items-center gap-2 h-7 px-3 rounded-full border border-[#2e2e2e] bg-white/[0.02] text-[11px] font-mono text-[#a1a1a1] mb-6">
+                <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full border border-[#2e2e2e] bg-white/[0.02] text-xs font-mono text-[#a1a1a1] mb-6">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981] animate-pulse"></span>
                     <span className="text-white font-medium">DEVCHAT 2.0</span>
                     <span className="text-[#565656]">·</span>
@@ -244,79 +238,59 @@ export default function Home() {
                 </div>
 
                 {/* Hero Title */}
-                <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white leading-[1.08] max-w-3xl mb-4">
+                <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white leading-[1.08] max-w-2xl mb-5">
                     Real-time chat built for developer flow.
                 </h1>
 
-                {/* Hero Subtitle (Short & Punchy) */}
-                <p className="text-base sm:text-lg text-[#a1a1a1] leading-relaxed max-w-xl mx-auto mb-8 font-normal">
-                    Stop alt-tabbing. Share code across 20+ languages, stream in-line AI explanations, and collaborate in sub-50ms channels.
+                {/* Hero Subtitle */}
+                <p className="text-base sm:text-lg text-[#a1a1a1] leading-relaxed max-w-lg mx-auto mb-8 font-normal">
+                    Share syntax-highlighted code, stream in-line AI explanations, and collaborate in sub-50ms channels.
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
+                <div className="flex items-center justify-center gap-3.5 mb-14">
                     <button
                         onClick={handleTryDemo}
                         disabled={demoLoading}
-                        className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-white text-black text-xs sm:text-sm font-semibold hover:bg-[#e8e8e8] transition-all shadow-[0_2px_16px_rgba(255,255,255,0.12)] disabled:opacity-60"
+                        className="h-11 px-7 rounded-full bg-white text-black text-sm font-semibold hover:bg-[#e4e4e7] transition-all shadow-[0_0_24px_rgba(255,255,255,0.15)] flex items-center gap-2 disabled:opacity-60"
                     >
-                        <span>{demoLoading ? 'Launching…' : 'Launch Demo'}</span>
-                        <span>→</span>
+                        <span>{demoLoading ? 'Launching…' : 'Try Live Demo'}</span>
+                        <span className="text-xs">→</span>
                     </button>
                     <button
                         onClick={() => { setMode('register'); setAuthModalOpen(true); }}
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] text-[#ededed] text-xs sm:text-sm font-medium hover:border-[#3a3a3a] hover:bg-[#141414] transition-all"
+                        className="h-11 px-6 rounded-full border border-[#2e2e2e] bg-[#111113] text-[#ededed] text-sm font-medium hover:border-[#3a3a3a] hover:bg-[#18181b] transition-all"
                     >
-                        <span>Create Account</span>
+                        Create Account
                     </button>
                 </div>
 
-                {/* Micro Subtitle */}
-                <p className="text-[11px] font-mono text-[#565656] mb-8">
-                    Instant sandbox · Zero signup required
-                </p>
-
-                {/* Tech Strip */}
-                <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-1.5 text-xs font-mono text-[#71717a] mb-12">
-                    <span>Next.js 15</span>
-                    <span className="text-[#3f3f46]">·</span>
-                    <span>Socket.io</span>
-                    <span className="text-[#3f3f46]">·</span>
-                    <span>Shiki</span>
-                    <span className="text-[#3f3f46]">·</span>
-                    <span>GPT-4o-mini</span>
-                    <span className="text-[#3f3f46]">·</span>
-                    <span>Redis</span>
-                    <span className="text-[#3f3f46]">·</span>
-                    <span>MongoDB</span>
-                </div>
-
                 {/* Interactive Product Preview Widget */}
-                <section id="preview" className="w-full max-w-4xl text-left">
-                    <div className="rounded-2xl border border-[#1f1f1f] bg-[#0a0a0a] shadow-2xl overflow-hidden">
-                        {/* Mock Window Top Bar */}
+                <section id="preview" className="w-full max-w-3xl text-left">
+                    <div className="rounded-xl border border-[#1f1f1f] bg-[#09090b] shadow-2xl overflow-hidden">
+                        {/* Top Window Bar */}
                         <div className="px-4 py-3 bg-[#0d0d0f] border-b border-[#1f1f1f] flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="w-3 h-3 rounded-full bg-[#262626]"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#262626]"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#262626]"></span>
-                                <span className="text-xs font-mono text-[#71717a] ml-2">devchat / workspace / core-engine</span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#262626]"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#262626]"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#262626]"></span>
+                                <span className="text-xs font-mono text-[#71717a] ml-2">devchat / #general</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
-                                <span className="text-[11px] font-mono text-[#10b981]">Connected (&lt;38ms)</span>
+                                <span className="text-[11px] font-mono text-[#10b981]">Sub-50ms</span>
                             </div>
                         </div>
 
-                        {/* Mock Workspace Body */}
-                        <div className="flex flex-col md:flex-row min-h-[420px]">
-                            {/* Mock Sidebar */}
-                            <div className="w-full md:w-56 border-b md:border-b-0 md:border-r border-[#1f1f1f] bg-[#080809] p-3 flex flex-col justify-between">
+                        {/* Workspace Body */}
+                        <div className="flex flex-col md:flex-row">
+                            {/* Left Sidebar */}
+                            <div className="w-full md:w-48 border-b md:border-b-0 md:border-r border-[#1f1f1f] bg-[#080809] p-3 space-y-4 shrink-0">
                                 <div>
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#565656] px-2 mb-2">
+                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#565656] px-2 mb-1.5">
                                         Channels
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="space-y-0.5">
                                         {[
                                             { id: 'general', name: 'general' },
                                             { id: 'ai-codegen', name: 'ai-codegen' },
@@ -325,10 +299,10 @@ export default function Home() {
                                             <button
                                                 key={ch.id}
                                                 onClick={() => setActiveMockChannel(ch.id)}
-                                                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all text-left ${
+                                                className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-mono transition-all text-left ${
                                                     activeMockChannel === ch.id
                                                         ? 'bg-[#141414] text-white border border-[#2e2e2e]'
-                                                        : 'text-[#71717a] hover:text-white hover:bg-[#0f0f11]'
+                                                        : 'text-[#71717a] hover:text-white'
                                                 }`}
                                             >
                                                 <span className="text-[#52a8ff]">#</span>
@@ -336,38 +310,40 @@ export default function Home() {
                                             </button>
                                         ))}
                                     </div>
+                                </div>
 
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#565656] px-2 mt-5 mb-2">
-                                        Online (3)
+                                <div>
+                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#565656] px-2 mb-1.5">
+                                        Members (3)
                                     </div>
                                     <div className="space-y-1 text-xs">
-                                        <div className="flex items-center gap-2 px-2 py-1 text-[#ededed]">
+                                        <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
                                             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                            <span>Alex (Staff Eng)</span>
+                                            <span>Alex</span>
                                         </div>
-                                        <div className="flex items-center gap-2 px-2 py-1 text-[#ededed]">
+                                        <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
                                             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                            <span>Sarah (Founding Eng)</span>
+                                            <span>Sarah</span>
                                         </div>
-                                        <div className="flex items-center gap-2 px-2 py-1 text-[#ededed]">
+                                        <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
                                             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                            <span>Shihab (AI Lead)</span>
+                                            <span>Shihab</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="pt-3 border-t border-[#1f1f1f] text-[11px] font-mono text-[#52a8ff] flex items-center gap-1.5">
+                                <div className="pt-2 border-t border-[#1f1f1f] text-[10px] font-mono text-[#52a8ff] flex items-center gap-1.5 px-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff]"></span>
-                                    <span>AI Engine: Ready</span>
+                                    <span>GPT-4o-mini Active</span>
                                 </div>
                             </div>
 
-                            {/* Mock Chat Feed */}
-                            <div className="flex-1 flex flex-col justify-between bg-black p-4 sm:p-5">
-                                <div className="space-y-4">
-                                    {/* Message */}
-                                    <div className="flex gap-3 items-start">
-                                        <div className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#52a8ff] shrink-0">
+                            {/* Right Chat Feed */}
+                            <div className="flex-1 bg-black p-4 sm:p-5 flex flex-col justify-between gap-4">
+                                <div className="space-y-3.5">
+                                    {/* Message 1 */}
+                                    <div className="flex gap-2.5 items-start">
+                                        <div className="w-7 h-7 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#52a8ff] shrink-0 mt-0.5">
                                             A
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -375,12 +351,12 @@ export default function Home() {
                                                 <span className="font-semibold text-white">Alex</span>
                                                 <span className="text-[10px] text-[#565656]">10:42 AM</span>
                                             </div>
-                                            <p className="text-xs text-[#a1a1a1] leading-relaxed">
-                                                Here is the token-bucket rate limiter in Rust for our WebSocket proxy:
+                                            <p className="text-xs text-[#a1a1a1] leading-relaxed mb-2">
+                                                Token-bucket rate limiter for our WebSocket proxy:
                                             </p>
 
-                                            {/* Code Snippet Box with explicit multiline formatting */}
-                                            <div className="mt-2.5 rounded-xl border border-[#1f1f1f] bg-[#0c0c0e] overflow-hidden">
+                                            {/* Code Snippet Box */}
+                                            <div className="rounded-lg border border-[#1f1f1f] bg-[#0c0c0e] overflow-hidden">
                                                 <div className="px-3 py-1.5 bg-[#121214] border-b border-[#1f1f1f] flex items-center justify-between">
                                                     <span className="text-[10px] font-mono text-[#52a8ff] uppercase font-semibold">rust</span>
                                                     <div className="flex items-center gap-2">
@@ -399,7 +375,7 @@ export default function Home() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <pre className="p-3.5 font-mono text-xs text-[#e4e4e7] overflow-x-auto leading-relaxed whitespace-pre font-normal">
+                                                <pre className="p-3 font-mono text-xs text-[#e4e4e7] overflow-x-auto leading-relaxed whitespace-pre font-normal">
 {`pub struct TokenBucket {
     capacity: usize,
     available: usize,
@@ -411,9 +387,9 @@ export default function Home() {
 
                                             {/* Streamed AI Explanation Card */}
                                             {mockExplanation !== null && (
-                                                <div className="mt-3 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed">
+                                                <div className="mt-2.5 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed">
                                                     <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#1f1f1f] text-[10px] text-[#52a8ff] uppercase tracking-wider">
-                                                        <span>In-Line AI Explanation (GPT-4o-mini SSE)</span>
+                                                        <span>In-Line AI Explanation</span>
                                                         <button onClick={() => setMockExplanation(null)} className="text-[#71717a] hover:text-white">✕</button>
                                                     </div>
                                                     <div className="whitespace-pre-wrap">
@@ -425,9 +401,25 @@ export default function Home() {
                                         </div>
                                     </div>
 
+                                    {/* Message 2 */}
+                                    <div className="flex gap-2.5 items-start">
+                                        <div className="w-7 h-7 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#10b981] shrink-0 mt-0.5">
+                                            S
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 text-xs mb-0.5">
+                                                <span className="font-semibold text-white">Sarah</span>
+                                                <span className="text-[10px] text-[#565656]">10:43 AM</span>
+                                            </div>
+                                            <p className="text-xs text-[#a1a1a1] leading-relaxed">
+                                                Tested with 50k concurrent sockets. Latency is under 40ms.
+                                            </p>
+                                        </div>
+                                    </div>
+
                                     {/* Typing Indicator */}
-                                    <div className="flex items-center gap-2 text-xs text-[#71717a] pl-11">
-                                        <span>Sarah is typing</span>
+                                    <div className="flex items-center gap-2 text-[11px] text-[#71717a] pl-9">
+                                        <span>Alex is typing</span>
                                         <span className="flex gap-1">
                                             <span className="typing-dot"></span>
                                             <span className="typing-dot"></span>
@@ -436,17 +428,17 @@ export default function Home() {
                                     </div>
                                 </div>
 
-                                {/* Mock Input */}
-                                <div className="mt-4 pt-3 border-t border-[#1f1f1f] flex items-center gap-2">
+                                {/* Mock Input Bar */}
+                                <div className="pt-3 border-t border-[#1f1f1f] flex items-center gap-2">
                                     <input
                                         type="text"
                                         readOnly
-                                        value="Click 'Explain with AI' above to test live in-line code breakdown ↑"
+                                        value="Message #general..."
                                         className="flex-1 px-3 py-2 rounded-lg bg-[#0e0e10] border border-[#1f1f1f] text-xs font-mono text-[#71717a] outline-none"
                                     />
                                     <button
                                         onClick={handleTryDemo}
-                                        className="px-3.5 py-2 rounded-lg bg-[#52a8ff] text-black text-xs font-semibold hover:bg-[#60a5fa] transition-colors shrink-0"
+                                        className="px-3.5 py-2 rounded-lg bg-white text-black text-xs font-semibold hover:bg-[#e4e4e7] transition-colors shrink-0"
                                     >
                                         Launch Full App →
                                     </button>
@@ -456,69 +448,69 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* Features Grid */}
-                <section id="features" className="mt-20 w-full max-w-4xl text-left">
+                {/* Features Section */}
+                <section id="features" className="mt-20 w-full max-w-3xl text-left">
                     <div className="mb-6">
-                        <div className="font-mono text-[11px] uppercase tracking-wider text-[#565656] mb-1">
+                        <div className="font-mono text-[10px] uppercase tracking-wider text-[#52a8ff] mb-1">
                             ENGINEERED FOR TEAMS
                         </div>
-                        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                        <h2 className="text-2xl font-bold tracking-tight text-white">
                             Everything developers need. Zero fluff.
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="yc-card p-5 sm:p-6">
-                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-sm mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div className="yc-card p-5">
+                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs mb-3">
                                 ⚡
                             </div>
-                            <h3 className="text-sm sm:text-base font-semibold text-white">Sub-50ms WebSocket Architecture</h3>
+                            <h3 className="text-sm font-semibold text-white">Sub-50ms WebSockets</h3>
                             <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                                Built on Socket.io with Redis pub/sub backplane. Features optimistic message sending, auto-reconnection banners, and instant presence indicators.
+                                Built on Socket.io with Redis pub/sub backplane. Features optimistic message sending and instant presence.
                             </p>
                         </div>
 
-                        <div className="yc-card p-5 sm:p-6">
-                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#10b981] text-sm mb-3">
+                        <div className="yc-card p-5">
+                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#10b981] text-xs mb-3">
                                 ✨
                             </div>
-                            <h3 className="text-sm sm:text-base font-semibold text-white">In-Line Streamed AI Intelligence</h3>
+                            <h3 className="text-sm font-semibold text-white">In-Line Streamed AI</h3>
                             <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                                Click "Explain" on any code snippet to receive token-by-token GPT-4o-mini breakdowns via Server-Sent Events. Explanations are cached per message for instant recall.
+                                Click "Explain" on any code snippet to receive token-by-token GPT-4o-mini breakdowns with per-message caching.
                             </p>
                         </div>
 
-                        <div className="yc-card p-5 sm:p-6">
-                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-sm mb-3">
+                        <div className="yc-card p-5">
+                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-xs mb-3">
                                 🖥️
                             </div>
-                            <h3 className="text-sm sm:text-base font-semibold text-white">VS Code-Grade Shiki Highlighting</h3>
+                            <h3 className="text-sm font-semibold text-white">VS Code-Grade Shiki</h3>
                             <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                                Powered by Shiki, the exact syntax engine used in VS Code. Supports 20+ languages including Rust, TypeScript, Python, Go, and SQL with one-click copy.
+                                Powered by Shiki syntax engine across 20+ languages including Rust, TypeScript, Python, and Go.
                             </p>
                         </div>
 
-                        <div className="yc-card p-5 sm:p-6">
-                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-sm mb-3">
+                        <div className="yc-card p-5">
+                            <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-xs mb-3">
                                 🔒
                             </div>
-                            <h3 className="text-sm sm:text-base font-semibold text-white">Zero-Friction Demo + AES-256 Security</h3>
+                            <h3 className="text-sm font-semibold text-white">AES-256 Key Security</h3>
                             <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                                Test in 2 seconds with an instant guest sandbox. Bring your own OpenAI API key with military-grade AES-256-GCM encryption at rest.
+                                Bring your own OpenAI API key encrypted at rest with AES-256-GCM, plus an instant guest sandbox.
                             </p>
                         </div>
                     </div>
                 </section>
 
-                {/* Architecture Spec */}
-                <section id="architecture" className="mt-16 w-full max-w-4xl text-left">
-                    <div className="rounded-2xl border border-[#1f1f1f] bg-[#0a0a0a] p-5 sm:p-6">
+                {/* Architecture Section */}
+                <section id="architecture" className="mt-16 w-full max-w-3xl text-left">
+                    <div className="rounded-xl border border-[#1f1f1f] bg-[#0a0a0a] p-5 sm:p-6">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1f1f1f]">
                             <div>
                                 <div className="font-mono text-[10px] uppercase tracking-wider text-[#52a8ff]">
                                     FULL-STACK SPECIFICATION
                                 </div>
-                                <h3 className="text-sm sm:text-base font-semibold text-white mt-0.5">High-Concurrency Real-Time Infrastructure</h3>
+                                <h3 className="text-sm font-semibold text-white mt-0.5">High-Concurrency Real-Time Infrastructure</h3>
                             </div>
                             <a
                                 href="https://github.com/shihabcodes/DevChat"
@@ -545,7 +537,7 @@ export default function Home() {
                             <div>
                                 <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider">AI Streaming</div>
                                 <div className="text-white font-medium mt-0.5">GPT-4o-mini</div>
-                                <div className="text-[#71717a] text-[10px]">SSE + Redis Cache</div>
+                                <div className="text-[#71717a] text-[10px]">SSE Streaming</div>
                             </div>
                             <div>
                                 <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider">Datastore</div>
@@ -558,8 +550,8 @@ export default function Home() {
             </main>
 
             {/* Footer */}
-            <footer className="w-full border-t border-[#1f1f1f] bg-black py-7 mt-auto">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[#565656]">
+            <footer className="w-full border-t border-[#1f1f1f] bg-black py-6 mt-auto">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[#565656]">
                     <div className="flex items-center gap-2">
                         <span className="text-[#ededed]">DevChat</span>
                         <span>·</span>
@@ -589,11 +581,11 @@ export default function Home() {
                         </button>
 
                         <div className="mb-6">
-                            <h3 className="text-lg font-bold text-white">
-                                {mode === 'login' ? 'Welcome to DevChat' : mode === 'register' ? 'Create an Account' : 'Join with Invite Code'}
+                            <h3 className="text-base font-bold text-white">
+                                {mode === 'login' ? 'Sign In to DevChat' : mode === 'register' ? 'Create an Account' : 'Join with Invite Code'}
                             </h3>
                             <p className="text-xs text-[#a1a1a1] mt-1">
-                                {mode === 'login' ? 'Sign in to access your developer workspaces' : mode === 'register' ? 'Start collaborating with your engineering team' : 'Enter the code provided by your workspace admin'}
+                                {mode === 'login' ? 'Access your engineering workspaces' : mode === 'register' ? 'Start collaborating with your team' : 'Enter the code from your workspace admin'}
                             </p>
                         </div>
 
