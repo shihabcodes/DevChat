@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api, { ApiError } from '@/lib/api';
+import api from '@/lib/api';
 
 export default function AISettings({ open, onClose, onChange }) {
     const [keyInfo, setKeyInfo] = useState(null);
@@ -79,109 +79,103 @@ export default function AISettings({ open, onClose, onChange }) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in p-4 font-sans"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="w-full max-w-md bg-[#12122A] border border-[#2D2D5E] rounded-2xl shadow-2xl overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#2D2D5E] flex items-center justify-between">
+            <div className="w-full max-w-md bg-[#0c0c0e] border border-[#2e2e2e] rounded-2xl shadow-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-[#1f1f1f] flex items-center justify-between">
                     <div>
-                        <h2 className="text-base font-bold text-[#F9FAFB]">AI Settings</h2>
-                        <p className="text-xs text-[#6B7280] mt-0.5">DevChat uses your own OpenAI key for explanations</p>
+                        <h2 className="text-sm font-semibold text-white">AI Engine Settings</h2>
+                        <p className="text-xs text-[#71717a] mt-0.5">Bring your own OpenAI key for in-line explanations</p>
                     </div>
-                    <button onClick={onClose} className="text-[#6B7280] hover:text-white text-xl leading-none" aria-label="Close">×</button>
+                    <button onClick={onClose} className="text-[#71717a] hover:text-white text-base leading-none" aria-label="Close">✕</button>
                 </div>
 
                 <div className="p-5 space-y-4">
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-[rgba(79,70,229,0.06)] border border-[rgba(79,70,229,0.18)]">
-                        <span className="text-base mt-0.5">🔒</span>
-                        <p className="text-[0.75rem] text-[#D1D5DB] leading-relaxed">
-                            Your key is <strong>encrypted at rest</strong> with AES-256-GCM and used only to call OpenAI on your behalf. We never log it, share it, or use it for anything else.
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-[#52a8ff]/5 border border-[#52a8ff]/20">
+                        <span className="text-sm mt-0.5">🔒</span>
+                        <p className="text-xs text-[#a1a1a1] leading-relaxed">
+                            Your key is <strong className="text-white">encrypted at rest with AES-256-GCM</strong> and used exclusively for your requests. Never logged or shared.
                         </p>
                     </div>
 
                     {keyInfo?.hasKey ? (
-                        <div className="p-3 rounded-lg bg-[#1A1A3E] border border-[#2D2D5E]">
-                            <div className="text-[0.7rem] uppercase tracking-wider text-[#6B7280] mb-1">Current key</div>
-                            <div className="font-['JetBrains_Mono',monospace] text-[#16A34A] text-sm">{keyInfo.mask}</div>
+                        <div className="p-3 rounded-xl bg-[#141414] border border-[#2e2e2e]">
+                            <div className="text-[10px] uppercase tracking-wider font-mono text-[#71717a] mb-1">Active Key</div>
+                            <div className="font-mono text-[#10b981] text-xs">{keyInfo.mask}</div>
                             {keyInfo.setAt && (
-                                <div className="text-[0.7rem] text-[#6B7280] mt-1">Added {new Date(keyInfo.setAt).toLocaleString()}</div>
+                                <div className="text-[10px] text-[#565656] mt-1">Configured on {new Date(keyInfo.setAt).toLocaleDateString()}</div>
                             )}
                         </div>
                     ) : (
-                        <div className="p-3 rounded-lg bg-[rgba(220,38,38,0.06)] border border-[rgba(220,38,38,0.2)]">
-                            <div className="text-[0.7rem] uppercase tracking-wider text-[#FCA5A5] mb-1">No key configured</div>
-                            <div className="text-[0.75rem] text-[#D1D5DB]">Add a key below to enable AI explanations.</div>
+                        <div className="p-3 rounded-xl bg-[#ef4444]/5 border border-[#ef4444]/20">
+                            <div className="text-[10px] uppercase tracking-wider font-mono text-[#f87171] mb-1">No API Key Configured</div>
+                            <div className="text-xs text-[#a1a1a1]">Add your OpenAI key below to enable streaming code explanations.</div>
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-[0.75rem] text-[#9CA3AF] mb-1.5 font-medium">
+                        <label className="block text-xs font-mono uppercase tracking-wider text-[#71717a] mb-1.5">
                             OpenAI API Key
                         </label>
                         <input
                             type="password"
                             value={draft}
                             onChange={(e) => setDraft(e.target.value)}
-                            placeholder="sk-..."
+                            placeholder="sk-proj-..."
                             autoComplete="off"
-                            className="w-full px-3.5 py-2.5 rounded-lg border border-[#2D2D5E] bg-[#13132E] text-[#F9FAFB] text-sm font-['JetBrains_Mono',monospace] outline-none focus:border-[#4F46E5] transition-colors"
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-[#2e2e2e] bg-[#141414] text-white text-xs font-mono outline-none focus:border-[#52a8ff] transition-colors"
                         />
                         <a
                             href="https://platform.openai.com/api-keys"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-block mt-1.5 text-[0.7rem] text-[#06B6D4] hover:underline"
+                            className="inline-block mt-1.5 text-[11px] font-mono text-[#52a8ff] hover:underline"
                         >
-                            Get your key at platform.openai.com →
+                            Get an OpenAI API key →
                         </a>
                     </div>
 
                     {error && (
-                        <div className="px-3 py-2 rounded-md bg-[rgba(220,38,38,0.1)] border border-[rgba(220,38,38,0.3)] text-[#FCA5A5] text-xs">
+                        <div className="px-3 py-2 rounded-lg bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] text-xs">
                             {error}
                         </div>
                     )}
 
                     {testResult && (
-                        <div className={`px-3 py-2 rounded-md text-xs ${
+                        <div className={`px-3 py-2 rounded-lg text-xs font-mono ${
                             testResult.ok
-                                ? 'bg-[rgba(22,163,74,0.1)] border border-[rgba(22,163,74,0.3)] text-[#86EFAC]'
-                                : 'bg-[rgba(220,38,38,0.1)] border border-[rgba(220,38,38,0.3)] text-[#FCA5A5]'
+                                ? 'bg-[#10b981]/10 border border-[#10b981]/30 text-[#86efac]'
+                                : 'bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5]'
                         }`}>
                             {testResult.ok
-                                ? `✓ Key works${testResult.mask ? ` (${testResult.mask})` : ''}`
+                                ? `✓ Key verified${testResult.mask ? ` (${testResult.mask})` : ''}`
                                 : testResult.reason === 'invalid_key'
-                                    ? '✗ OpenAI rejected the key. Check it and try again.'
-                                    : testResult.reason === 'decrypt_failed'
-                                        ? '✗ Stored key could not be decrypted. Re-add it.'
-                                        : `✗ ${testResult.message || testResult.reason || 'Test failed'}`}
+                                    ? '✗ OpenAI rejected the key. Verify and re-enter.'
+                                    : `✗ ${testResult.message || testResult.reason || 'Verification failed'}`}
                         </div>
                     )}
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-1">
                         <button
                             onClick={handleSave}
                             disabled={saving || !draft}
-                            className="flex-1 py-2 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{
-                                background: saving || !draft ? '#3730A3' : 'linear-gradient(135deg, #4F46E5, #6366F1)',
-                                boxShadow: '0 4px 16px rgba(79,70,229,0.3)',
-                            }}
+                            className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-white text-black hover:bg-[#e8e8e8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {saving ? 'Saving…' : (keyInfo?.hasKey ? 'Replace key' : 'Add key')}
+                            {saving ? 'Saving…' : (keyInfo?.hasKey ? 'Replace key' : 'Save key')}
                         </button>
                         {keyInfo?.hasKey && (
                             <>
                                 <button
                                     onClick={handleTest}
                                     disabled={testing}
-                                    className="px-4 py-2 rounded-lg text-sm font-semibold border border-[#2D2D5E] text-[#9CA3AF] hover:text-white hover:border-[#3D3D6E] disabled:opacity-50"
+                                    className="px-3.5 py-2.5 rounded-xl text-xs font-mono border border-[#2e2e2e] text-[#a1a1a1] hover:text-white hover:border-[#3a3a3a] disabled:opacity-50"
                                 >
                                     {testing ? 'Testing…' : 'Test'}
                                 </button>
                                 <button
                                     onClick={handleRemove}
-                                    className="px-4 py-2 rounded-lg text-sm font-semibold border border-[rgba(220,38,38,0.4)] text-[#FCA5A5] hover:bg-[rgba(220,38,38,0.1)]"
+                                    className="px-3.5 py-2.5 rounded-xl text-xs font-mono border border-[#ef4444]/40 text-[#f87171] hover:bg-[#ef4444]/10"
                                 >
                                     Remove
                                 </button>

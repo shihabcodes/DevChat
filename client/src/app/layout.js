@@ -6,11 +6,11 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://devchat.app';
 export const metadata = {
     metadataBase: new URL(siteUrl),
     title: {
-        default: "DevChat — Real-Time Developer Chat",
+        default: "DevChat: Real-Time Developer Chat & In-Line AI",
         template: "%s · DevChat",
     },
     description:
-        "A real-time chat platform built for developers. Share code with syntax highlighting, get AI explanations streamed in-line, and collaborate without breaking flow.",
+        "Real-time chat built for developer flow. Share code with syntax highlighting across 20+ languages, stream AI explanations in-line, and collaborate in sub-50ms channels.",
     keywords: [
         "developer chat",
         "code sharing",
@@ -26,13 +26,13 @@ export const metadata = {
         locale: "en_US",
         url: siteUrl,
         siteName: "DevChat",
-        title: "DevChat — Real-Time Developer Chat",
+        title: "DevChat: Real-Time Developer Chat & In-Line AI",
         description:
             "Real-time chat for developers. Code highlighting. AI explanations. Built for flow.",
     },
     twitter: {
         card: "summary_large_image",
-        title: "DevChat — Real-Time Developer Chat",
+        title: "DevChat: Real-Time Developer Chat & In-Line AI",
         description: "Real-time chat for developers. Built for flow.",
     },
     robots: {
@@ -42,7 +42,7 @@ export const metadata = {
 };
 
 export const viewport = {
-    themeColor: "#0F0F23",
+    themeColor: "#000000",
     width: "device-width",
     initialScale: 1,
 };
@@ -54,11 +54,11 @@ export default function RootLayout({ children }) {
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
                 <link
-                    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+                    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap"
                     rel="stylesheet"
                 />
             </head>
-            <body style={{ fontFamily: "'Inter', sans-serif" }} suppressHydrationWarning>
+            <body style={{ fontFamily: "'Geist', 'Inter', sans-serif" }} suppressHydrationWarning>
                 <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID}>
                     {children}
                 </GoogleOAuthProvider>

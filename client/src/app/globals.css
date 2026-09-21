@@ -1,25 +1,25 @@
 @import "tailwindcss";
 
-/* === DevChat Design Tokens === */
+/* === DevChat Obsidian Design Tokens (YC AI Startup Standard) === */
 @theme {
-  --color-primary: #4F46E5;
-  --color-primary-hover: #4338CA;
-  --color-primary-light: #6366F1;
-  --color-bg-dark: #0F0F23;
-  --color-bg-surface: #1A1A3E;
-  --color-bg-surface-hover: #242455;
-  --color-bg-code: #1E1E2E;
-  --color-bg-input: #13132E;
-  --color-text-primary: #F9FAFB;
-  --color-text-muted: #9CA3AF;
-  --color-text-dim: #6B7280;
-  --color-border: #2D2D5E;
-  --color-border-light: #3D3D6E;
-  --color-success: #16A34A;
-  --color-danger: #DC2626;
-  --color-warning: #F59E0B;
-  --color-accent-cyan: #06B6D4;
-  --color-accent-purple: #A855F7;
+  --color-primary: #52a8ff;
+  --color-primary-hover: #3b82f6;
+  --color-primary-light: #60a5fa;
+  --color-bg-dark: #000000;
+  --color-bg-surface: #0a0a0a;
+  --color-bg-surface-hover: #141414;
+  --color-bg-code: #0d0d0d;
+  --color-bg-input: #0f0f11;
+  --color-text-primary: #ededed;
+  --color-text-muted: #a1a1a1;
+  --color-text-dim: #71717a;
+  --color-border: #1f1f1f;
+  --color-border-light: #2e2e2e;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-accent-cyan: #38bdf8;
+  --color-accent-purple: #818cf8;
 }
 
 /* === Base Styles === */
@@ -31,17 +31,44 @@
 
 html, body {
   height: 100%;
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #000000;
+  color: #ededed;
+  font-family: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* === Grid & Ambient Backgrounds === */
+.grid-bg {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+}
+
+.hero-glow {
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  width: 900px;
+  height: 560px;
+  transform: translateX(-50%);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(82, 168, 255, 0.12), transparent 70%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.hero-title-gradient {
+  background: linear-gradient(180deg, #ffffff 30%, #a1a1aa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 /* === Custom Scrollbar === */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -49,19 +76,19 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 4px;
+  background: #27272a;
+  border-radius: 9999px;
   transition: background-color 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-light);
+  background: #3f3f46;
 }
 
 /* === Selection === */
 ::selection {
-  background: rgba(79, 70, 229, 0.4);
-  color: #fff;
+  background: rgba(82, 168, 255, 0.25);
+  color: #ffffff;
 }
 
 /* === Animations === */
@@ -73,11 +100,6 @@ html, body {
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(-12px); }
   to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
-  50% { box-shadow: 0 0 16px 6px rgba(79, 70, 229, 0.2); }
 }
 
 @keyframes shimmer {
@@ -102,113 +124,83 @@ html, body {
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--color-bg-surface) 25%,
-    var(--color-bg-surface-hover) 50%,
-    var(--color-bg-surface) 75%
+    #141414 25%,
+    #1f1f1f 50%,
+    #141414 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: 0.5rem;
 }
 
-/* === Glass Effect === */
+/* === Glass & Card Effects === */
 .glass {
-  background: rgba(19, 19, 46, 0.65);
+  background: rgba(10, 10, 10, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(26, 26, 62, 0.4) 0%, rgba(19, 19, 46, 0.6) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: border-color 0.3s, box-shadow 0.3s;
+  background: #0a0a0a;
+  border: 1px solid #1f1f1f;
+  border-radius: 14px;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .glass-card:hover {
-  border-color: rgba(79, 70, 229, 0.2);
-  box-shadow: 0 8px 32px 0 rgba(79, 70, 229, 0.08);
+  border-color: #2e2e2e;
 }
 
-/* === Premium Button Glows === */
-.glow-btn {
+/* === YC Gradient Border Hover Effect === */
+.yc-card {
   position: relative;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #0a0a0a;
+  border: 1px solid #1f1f1f;
+  border-radius: 14px;
+  transition: border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1), background 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
 }
 
-.glow-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+.yc-card:before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(82, 168, 255, 0.28), transparent 45%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
 
-.glow-btn:active {
-  transform: translateY(0);
+.yc-card:hover {
+  border-color: #2e2e2e;
+  background: #0f0f11;
+}
+
+.yc-card:hover:before {
+  opacity: 1;
 }
 
 /* === AI Explanation Card === */
 .ai-card {
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.06) 0%, rgba(168, 85, 247, 0.06) 100%);
-  border: 1px solid rgba(79, 70, 229, 0.15);
-  border-radius: 12px;
-  padding: 1.15rem 1.35rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  background: #0c0e14;
+  border: 1px solid rgba(82, 168, 255, 0.2);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
 }
 
 .ai-card code {
-  background: var(--color-bg-code);
+  background: #18181b;
   padding: 0.2em 0.4em;
   border-radius: 4px;
   font-size: 0.85em;
-  border: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-/* === Unread Badge === */
-.unread-badge {
-  min-width: 1.25rem;
-  height: 1.25rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  background: var(--color-danger);
-  color: #fff;
-  border-radius: 9999px;
-  padding: 0 0.35rem;
-}
-
-/* === Tooltip === */
-.tooltip {
-  position: relative;
-}
-
-.tooltip::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) scale(0.95);
-  background: #13132e;
-  color: var(--color-text-primary);
-  font-size: 0.72rem;
-  font-weight: 500;
-  padding: 0.35rem 0.65rem;
-  border-radius: 6px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  z-index: 50;
-}
-
-.tooltip:hover::after {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: 'Geist Mono', 'JetBrains Mono', monospace;
 }
 
 /* === Dot animations === */
@@ -217,7 +209,7 @@ html, body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--color-text-muted);
+  background: #a1a1a1;
   animation: bounceDot 1.4s infinite ease-in-out both;
 }
 
@@ -228,4 +220,3 @@ html, body {
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
 }
-

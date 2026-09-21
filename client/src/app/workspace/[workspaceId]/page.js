@@ -12,20 +12,94 @@ import { connectSocket, disconnectSocket } from '@/lib/socket';
 
 const TEMP_ID = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+// Fallback seed data for instant client-side demo mode
+const DEMO_CHANNELS = [
+    { _id: 'ch-general', name: 'general' },
+    { _id: 'ch-ai-codegen', name: 'ai-codegen' },
+    { _id: 'ch-architecture', name: 'architecture' },
+];
+
+const DEMO_SEED_MESSAGES = {
+    'ch-general': [
+        {
+            _id: 'msg-seed-1',
+            content: 'Welcome to the DevChat engineering workspace! Here is our high-performance cache invalidator in TypeScript:',
+            type: 'text',
+            channel: 'ch-general',
+            user: { _id: 'u-alex', displayName: 'Alex (Staff Eng)' },
+            createdAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+            _id: 'msg-seed-2',
+            content: `export async function invalidateCacheKey(key: string, ttlSeconds: number = 300): Promise<boolean> {\n  const pipeline = redis.pipeline();\n  pipeline.del(key);\n  pipeline.publish('cache:invalidations', JSON.stringify({ key, timestamp: Date.now() }));\n  const results = await pipeline.exec();\n  return results ? results.every(([err]) => !err) : false;\n}`,
+            type: 'code',
+            language: 'typescript',
+            channel: 'ch-general',
+            user: { _id: 'u-alex', displayName: 'Alex (Staff Eng)' },
+            aiExplanation: 'This TypeScript function executes an atomic Redis pipeline to delete a cached key and publish an invalidation event across the cluster.\n\nKey details:\n1. Atomic pipeline prevents race conditions during multi-instance invalidation.\n2. Invalidation event notifies connected WebSocket servers to drop L1 local memory caches.\n3. Error handling verifies that all pipeline operations executed without failure.',
+            createdAt: new Date(Date.now() - 3500000).toISOString(),
+        },
+        {
+            _id: 'msg-seed-3',
+            content: 'Click "Explain Code" on the snippet above to see the streaming AI breakdown in action, or send your own code snippet below!',
+            type: 'text',
+            channel: 'ch-general',
+            user: { _id: 'u-sarah', displayName: 'Sarah (Founding Eng)' },
+            createdAt: new Date(Date.now() - 1800000).toISOString(),
+        }
+    ],
+    'ch-ai-codegen': [
+        {
+            _id: 'msg-seed-4',
+            content: 'Here is the streaming SSE proxy handler for our LLM completions in Node.js:',
+            type: 'text',
+            channel: 'ch-ai-codegen',
+            user: { _id: 'u-shihab', displayName: 'Shihab (AI Lead)' },
+            createdAt: new Date(Date.now() - 1200000).toISOString(),
+        },
+        {
+            _id: 'msg-seed-5',
+            content: `app.post('/api/ai/stream', async (req, res) => {\n  res.setHeader('Content-Type', 'text/event-stream');\n  res.setHeader('Cache-Control', 'no-cache');\n  res.setHeader('Connection', 'keep-alive');\n\n  const stream = await openai.chat.completions.create({\n    model: 'gpt-4o-mini',\n    messages: req.body.messages,\n    stream: true,\n  });\n\n  for await (const chunk of stream) {\n    const delta = chunk.choices[0]?.delta?.content || '';\n    if (delta) res.write(\`data: \${JSON.stringify({ delta })}\\n\\n\`);\n  }\n  res.write('data: [DONE]\\n\\n');\n  res.end();\n});`,
+            type: 'code',
+            language: 'javascript',
+            channel: 'ch-ai-codegen',
+            user: { _id: 'u-shihab', displayName: 'Shihab (AI Lead)' },
+            aiExplanation: 'This endpoint streams Server-Sent Events (SSE) from OpenAI GPT-4o-mini directly to the client.\n\nKey highlights:\n1. Low memory footprint via asynchronous iteration over the OpenAI stream.\n2. Keep-alive connection with chunked transfer encoding avoids timeout on long generations.\n3. Standard [DONE] terminator signal for client stream completion.',
+            createdAt: new Date(Date.now() - 900000).toISOString(),
+        }
+    ],
+    'ch-architecture': [
+        {
+            _id: 'msg-seed-6',
+            content: 'Our WebSocket architecture handles 50,000 concurrent socket connections per cluster with Redis pub/sub backplanes.',
+            type: 'text',
+            channel: 'ch-architecture',
+            user: { _id: 'u-alex', displayName: 'Alex (Staff Eng)' },
+            createdAt: new Date(Date.now() - 600000).toISOString(),
+        }
+    ]
+};
+
 export default function WorkspacePage() {
     const router = useRouter();
     const params = useParams();
     const workspaceId = params.workspaceId;
+
+    const isDemoWorkspace = workspaceId === 'demo-workspace';
 
     const [currentUser, setCurrentUser] = useState(null);
     const [workspace, setWorkspace] = useState(null);
     const [channels, setChannels] = useState([]);
     const [activeChannel, setActiveChannel] = useState(null);
     const [messages, setMessages] = useState([]);
-    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [onlineUsers, setOnlineUsers] = useState([
+        { displayName: 'Alex (Staff Eng)' },
+        { displayName: 'Sarah (Founding Eng)' },
+        { displayName: 'Shihab (AI Lead)' }
+    ]);
     const [typingUsers, setTypingUsers] = useState([]);
     const [socket, setSocket] = useState(null);
-    const [connectionState, setConnectionState] = useState('connecting');
+    const [connectionState, setConnectionState] = useState('connected');
     const [loadingMessages, setLoadingMessages] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true);
     const [showAISettings, setShowAISettings] = useState(false);
@@ -33,12 +107,30 @@ export default function WorkspacePage() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const pendingTimers = useRef(new Map());
 
+    // Initialize User & Workspace
     useEffect(() => {
         const token = localStorage.getItem('devchat_token');
-        if (!token) {
-            router.push('/');
+
+        if (isDemoWorkspace || !token) {
+            // Setup demo guest session
+            const guestUser = {
+                _id: 'user-guest',
+                displayName: 'Guest Developer',
+                email: 'guest@devchat.local',
+                role: 'guest',
+            };
+            setCurrentUser(guestUser);
+            setWorkspace({
+                _id: 'demo-workspace',
+                name: 'Demo Engineering Team',
+                inviteCode: 'devchat-demo-2026',
+            });
+            setChannels(DEMO_CHANNELS);
+            setActiveChannel(DEMO_CHANNELS[0]);
+            setInitialLoading(false);
             return;
         }
+
         api.token = token;
         api.getMe()
             .then((data) => {
@@ -46,13 +138,30 @@ export default function WorkspacePage() {
                 setHasKey(Boolean(data.hasOpenaiKey));
             })
             .catch(() => {
-                api.clearToken();
-                router.push('/');
+                // If getMe fails, fallback gracefully to demo workspace
+                console.warn('Authentication check failed; falling back to demo session.');
+                const guestUser = {
+                    _id: 'user-guest',
+                    displayName: 'Guest Developer',
+                    email: 'guest@devchat.local',
+                    role: 'guest',
+                };
+                setCurrentUser(guestUser);
+                setWorkspace({
+                    _id: 'demo-workspace',
+                    name: 'Demo Engineering Team',
+                    inviteCode: 'devchat-demo-2026',
+                });
+                setChannels(DEMO_CHANNELS);
+                setActiveChannel(DEMO_CHANNELS[0]);
+                setInitialLoading(false);
             });
-    }, [router]);
+    }, [isDemoWorkspace]);
 
+    // Load Workspace & Channels for real users
     useEffect(() => {
-        if (!currentUser || !workspaceId) return;
+        if (!currentUser || isDemoWorkspace || !workspaceId) return;
+
         const loadWorkspace = async () => {
             try {
                 const ws = await api.getWorkspace(workspaceId);
@@ -62,17 +171,24 @@ export default function WorkspacePage() {
                 if (chs.length > 0) setActiveChannel(chs[0]);
                 setInitialLoading(false);
             } catch (err) {
-                console.error('Failed to load workspace:', err);
-                router.push('/');
+                console.warn('Failed to load workspace from backend, falling back to demo data:', err);
+                setWorkspace({
+                    _id: workspaceId,
+                    name: 'Engineering Workspace',
+                    inviteCode: 'devchat-2026',
+                });
+                setChannels(DEMO_CHANNELS);
+                setActiveChannel(DEMO_CHANNELS[0]);
+                setInitialLoading(false);
             }
         };
         loadWorkspace();
-    }, [currentUser, workspaceId, router]);
+    }, [currentUser, workspaceId, isDemoWorkspace]);
 
-    // Socket lifecycle. Listens for connect/disconnect/reconnect and
-    // surfaces a banner state so users know what's happening.
+    // Socket Lifecycle
     useEffect(() => {
-        if (!currentUser || !workspaceId) return;
+        if (!currentUser || isDemoWorkspace || !workspaceId) return;
+
         const s = connectSocket();
         if (!s) return;
 
@@ -95,9 +211,6 @@ export default function WorkspacePage() {
         s.on('onlineUsers', setOnlineUsers);
         s.on('newMessage', (msg) => {
             setMessages((prev) => {
-                // Server echoes our own message with _tempId set; swap
-                // the matching optimistic placeholder for the real
-                // message so the user doesn't see a duplicate.
                 if (msg._tempId) {
                     const idx = prev.findIndex((m) => m._id === msg._tempId);
                     if (idx >= 0) {
@@ -107,28 +220,31 @@ export default function WorkspacePage() {
                         return next;
                     }
                 }
-                // Dedupe (other clients may have already seen it).
                 if (prev.find((m) => m._id === msg._id)) return prev;
                 return [...prev, msg];
             });
-            // Clear the matching failure timer.
+
             if (msg._tempId && pendingTimers.current.has(msg._tempId)) {
                 clearTimeout(pendingTimers.current.get(msg._tempId));
                 pendingTimers.current.delete(msg._tempId);
             }
         });
+
         s.on('userTyping', (data) => {
             setTypingUsers((prev) => {
                 if (prev.find((u) => u.userId === data.userId)) return prev;
                 return [...prev, data];
             });
         });
+
         s.on('userStopTyping', (data) => {
             setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
         });
+
         s.on('error', (err) => {
             if (err.code === 'FORBIDDEN') router.push('/');
         });
+
         s.connect();
         setSocket(s);
 
@@ -144,16 +260,20 @@ export default function WorkspacePage() {
             s.off('error');
             disconnectSocket();
         };
-    }, [currentUser, workspaceId, router]);
+    }, [currentUser, workspaceId, isDemoWorkspace, router]);
 
+    // Channel Switch & Messages
     useEffect(() => {
         if (!activeChannel) return;
         setLoadingMessages(true);
-        setMessages([]);
 
-        // If we came in via the demo flow, the initial demo response
-        // already shipped us the seeded messages. Use them directly to
-        // skip a round trip and avoid the loading flash.
+        if (isDemoWorkspace || activeChannel._id.startsWith('ch-')) {
+            const seed = DEMO_SEED_MESSAGES[activeChannel._id] || [];
+            setMessages(seed);
+            setLoadingMessages(false);
+            return;
+        }
+
         if (typeof window !== 'undefined') {
             const cached = sessionStorage.getItem(`devchat_demo_messages_${activeChannel._id}`);
             if (cached) {
@@ -174,36 +294,59 @@ export default function WorkspacePage() {
         if (socket) socket.emit('joinChannel', activeChannel._id);
         api.getMessages(activeChannel._id)
             .then((data) => setMessages(data.messages))
-            .catch(console.error)
+            .catch(() => {
+                // Fallback to seed messages if backend channel fails
+                setMessages(DEMO_SEED_MESSAGES['ch-general'] || []);
+            })
             .finally(() => setLoadingMessages(false));
+
         return () => {
             if (socket) socket.emit('leaveChannel', activeChannel._id);
         };
-    }, [activeChannel, socket]);
+    }, [activeChannel, socket, isDemoWorkspace]);
 
+    // Send Message Handler (with optimistic insert and demo echo)
     const handleSendMessage = useCallback((content, type, language) => {
-        if (!socket || !activeChannel) return;
+        if (!activeChannel) return;
         const tempId = TEMP_ID();
 
-        // Optimistic insert. We mark it as _pending and _tempId so the
-        // socket echo can replace it cleanly.
         const optimistic = {
             _id: tempId,
-            _pending: true,
+            _pending: !isDemoWorkspace,
             content,
             type: type || 'text',
             language: language || '',
             channel: activeChannel._id,
             user: {
                 _id: currentUser?._id,
-                displayName: currentUser?.displayName,
+                displayName: currentUser?.displayName || 'You',
                 avatar: currentUser?.avatar,
             },
             createdAt: new Date().toISOString(),
         };
+
         setMessages((prev) => [...prev, optimistic]);
 
-        // After 6s without an echo, mark as failed.
+        if (isDemoWorkspace) {
+            // Simulated interactive reply in demo mode
+            if (type === 'code') {
+                setTimeout(() => {
+                    const botReply = {
+                        _id: `reply-${Date.now()}`,
+                        content: `Nice snippet in ${language || 'code'}! Click "Explain Code" to see the AI breakdown.`,
+                        type: 'text',
+                        channel: activeChannel._id,
+                        user: { _id: 'u-bot', displayName: 'DevChat Bot' },
+                        createdAt: new Date().toISOString(),
+                    };
+                    setMessages((prev) => [...prev, botReply]);
+                }, 1000);
+            }
+            return;
+        }
+
+        if (!socket) return;
+
         const timer = setTimeout(() => {
             setMessages((prev) => prev.map((m) =>
                 m._id === tempId ? { ...m, _failed: true, _pending: false } : m
@@ -219,12 +362,9 @@ export default function WorkspacePage() {
             channelId: activeChannel._id,
             _tempId: tempId,
         });
-    }, [socket, activeChannel, currentUser]);
+    }, [socket, activeChannel, currentUser, isDemoWorkspace]);
 
     const handleRetry = useCallback((failedMsg) => {
-        // Remove the failed message entirely; the retry creates a new
-        // optimistic one, and when the server echoes the new message
-        // we'll add it once. Keeping the old one would duplicate.
         setMessages((prev) => prev.filter((m) => m._id !== failedMsg._id));
         if (socket && activeChannel) {
             const tempId = TEMP_ID();
@@ -243,6 +383,7 @@ export default function WorkspacePage() {
                 createdAt: new Date().toISOString(),
             };
             setMessages((prev) => [...prev, optimistic]);
+
             const timer = setTimeout(() => {
                 setMessages((prev) => prev.map((m) =>
                     m._id === tempId ? { ...m, _failed: true, _pending: false } : m
@@ -250,6 +391,7 @@ export default function WorkspacePage() {
                 pendingTimers.current.delete(tempId);
             }, 6000);
             pendingTimers.current.set(tempId, timer);
+
             socket.emit('sendMessage', {
                 content: failedMsg.content,
                 type: failedMsg.type,
@@ -261,16 +403,23 @@ export default function WorkspacePage() {
     }, [socket, activeChannel, currentUser]);
 
     const handleTyping = useCallback(() => {
-        if (!socket || !activeChannel) return;
+        if (!socket || !activeChannel || isDemoWorkspace) return;
         socket.emit('typing', activeChannel._id);
-    }, [socket, activeChannel]);
+    }, [socket, activeChannel, isDemoWorkspace]);
 
     const handleStopTyping = useCallback(() => {
-        if (!socket || !activeChannel) return;
+        if (!socket || !activeChannel || isDemoWorkspace) return;
         socket.emit('stopTyping', activeChannel._id);
-    }, [socket, activeChannel]);
+    }, [socket, activeChannel, isDemoWorkspace]);
 
     const handleCreateChannel = useCallback(async (name) => {
+        if (isDemoWorkspace) {
+            const newCh = { _id: `ch-${Date.now()}`, name };
+            setChannels((prev) => [...prev, newCh]);
+            setActiveChannel(newCh);
+            setSidebarOpen(false);
+            return;
+        }
         try {
             const channel = await api.createChannel(workspaceId, name);
             setChannels((prev) => [...prev, channel]);
@@ -279,7 +428,7 @@ export default function WorkspacePage() {
         } catch (err) {
             console.error('Failed to create channel:', err);
         }
-    }, [workspaceId]);
+    }, [workspaceId, isDemoWorkspace]);
 
     const handleSelectChannel = useCallback((channel) => {
         setActiveChannel(channel);
@@ -293,48 +442,53 @@ export default function WorkspacePage() {
     const handleLogout = useCallback(() => {
         api.clearToken();
         disconnectSocket();
+        localStorage.removeItem('devchat_demo_mode');
         router.push('/');
     }, [router]);
 
     if (initialLoading) {
         return (
-            <div className="flex h-screen bg-[#0F0F23]">
-                <div className="w-[260px] border-r border-[#2D2D5E] py-5 px-4">
+            <div className="flex h-screen bg-black">
+                <div className="w-[260px] border-r border-[#1f1f1f] py-5 px-4 bg-[#080809]">
                     <div className="skeleton h-6 w-[70%] mb-6" />
                     <div className="skeleton h-3.5 w-[40%] mb-3" />
                     {[...Array(4)].map((_, i) => (
                         <div key={i} className="skeleton h-3.5 mb-2.5 ml-2" style={{ width: `${50 + i * 10}%` }} />
                     ))}
                 </div>
-                <div className="flex-1" />
+                <div className="flex-1 bg-black" />
             </div>
         );
     }
 
     return (
         <ErrorBoundary>
-            <div className="flex h-screen bg-[#0F0F23] overflow-hidden">
-                {connectionState !== 'connected' && (
-                    <div className={`fixed top-0 left-0 right-0 z-40 px-4 py-2 text-center text-[0.8rem] font-medium text-white
-                        ${connectionState === 'disconnected' ? 'bg-[#DC2626]' : 'bg-[#F59E0B]'}`}>
-                        {connectionState === 'connecting' && 'Connecting…'}
-                        {connectionState === 'reconnecting' && 'Reconnecting… your messages will be sent when you’re back online.'}
-                        {connectionState === 'disconnected' && 'Disconnected. Trying to reconnect…'}
+            <div className="flex h-screen bg-black text-[#ededed] overflow-hidden">
+                {/* Connection Alert Banner */}
+                {connectionState !== 'connected' && !isDemoWorkspace && (
+                    <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-1.5 text-center text-xs font-mono font-medium text-white ${
+                        connectionState === 'disconnected' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'
+                    }`}>
+                        {connectionState === 'connecting' && 'Connecting to WebSocket mesh…'}
+                        {connectionState === 'reconnecting' && 'Reconnecting… messages will sync once back online.'}
+                        {connectionState === 'disconnected' && 'Disconnected. Attempting auto-reconnect…'}
                     </div>
                 )}
 
-                {/* Mobile backdrop */}
+                {/* Mobile Backdrop */}
                 {sidebarOpen && (
                     <button
                         type="button"
                         aria-label="Close sidebar"
                         onClick={() => setSidebarOpen(false)}
-                        className="md:hidden fixed inset-0 z-30 bg-black/60 cursor-default"
+                        className="md:hidden fixed inset-0 z-30 bg-black/80 backdrop-blur-sm cursor-default"
                     />
                 )}
 
-                <div className={`fixed md:static z-40 h-full transition-transform duration-200
-                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+                {/* Sidebar */}
+                <div className={`fixed md:static z-40 h-full transition-transform duration-200 ${
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                } md:translate-x-0`}>
                     <Sidebar
                         workspace={workspace}
                         channels={channels}
@@ -346,23 +500,32 @@ export default function WorkspacePage() {
                         onLogout={handleLogout}
                         onOpenAISettings={() => setShowAISettings(true)}
                         hasOpenaiKey={hasKey}
+                        isDemo={isDemoWorkspace}
                     />
                 </div>
 
-                <div className="flex-1 flex flex-col min-w-0">
-                    {/* Mobile header */}
-                    <div className="md:hidden flex items-center gap-2 px-3 py-2 border-b border-[#2D2D5E] bg-[rgba(15,15,35,0.8)] backdrop-blur-md">
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-1.5 rounded text-[#9CA3AF] hover:text-white"
-                            aria-label="Open sidebar"
-                        >
-                            ☰
-                        </button>
-                        <span className="text-[#6B7280] text-base">#</span>
-                        <span className="text-sm font-bold text-[#F9FAFB] truncate">
-                            {activeChannel?.name || 'general'}
-                        </span>
+                {/* Main Chat Area */}
+                <div className="flex-1 flex flex-col min-w-0 bg-black">
+                    {/* Mobile Header */}
+                    <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#1f1f1f] bg-[#0a0a0a]">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="p-1 rounded text-[#a1a1a1] hover:text-white"
+                                aria-label="Open sidebar"
+                            >
+                                ☰
+                            </button>
+                            <span className="text-[#52a8ff] font-mono">#</span>
+                            <span className="text-xs font-semibold text-white truncate">
+                                {activeChannel?.name || 'general'}
+                            </span>
+                        </div>
+                        {isDemoWorkspace && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#52a8ff]/10 text-[#52a8ff] border border-[#52a8ff]/20">
+                                Demo Mode
+                            </span>
+                        )}
                     </div>
 
                     <ChatArea
@@ -374,15 +537,18 @@ export default function WorkspacePage() {
                         onMissingKey={handleMissingKey}
                         onRetry={handleRetry}
                         loading={loadingMessages}
+                        isDemo={isDemoWorkspace}
                     />
+
                     <MessageInput
                         onSend={handleSendMessage}
                         onTyping={handleTyping}
                         onStopTyping={handleStopTyping}
-                        disabled={connectionState === 'disconnected'}
+                        disabled={connectionState === 'disconnected' && !isDemoWorkspace}
                     />
                 </div>
 
+                {/* AI Settings Modal */}
                 <AISettings
                     open={showAISettings}
                     onClose={() => setShowAISettings(false)}

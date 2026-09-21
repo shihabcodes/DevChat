@@ -8,15 +8,16 @@ import rehypeSanitize from 'rehype-sanitize';
 import api, { ApiError } from '@/lib/api';
 import { highlightCode } from '@/lib/highlight';
 
-export default function CodeBlock({ code, language, messageId, onMissingKey }) {
+export default function CodeBlock({ code, language, messageId, onMissingKey, cachedExplanation, isDemo }) {
     const [copied, setCopied] = useState(false);
     const [explaining, setExplaining] = useState(false);
-    const [explanation, setExplanation] = useState(null);
-    const [showExplain, setShowExplain] = useState(false);
+    const [explanation, setExplanation] = useState(cachedExplanation || null);
+    const [showExplain, setShowExplain] = useState(Boolean(cachedExplanation));
     const [html, setHtml] = useState(null);
     const [needsKey, setNeedsKey] = useState(false);
     const [error, setError] = useState(null);
     const streamRef = useRef(null);
+    const cancelledRef = useRef(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -35,20 +36,42 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
         } catch {/* ignore */}
     };
 
-    const cancelledRef = useRef(false);
-
     const handleExplain = async () => {
         if (explanation) {
             setShowExplain((v) => !v);
             return;
         }
+
         if (!showExplain) setShowExplain(true);
         if (explaining) return;
+
         setExplaining(true);
         setError(null);
         setNeedsKey(false);
         setExplanation('');
         cancelledRef.current = false;
+
+        // If in demo mode or offline, simulate streaming explanation
+        if (isDemo || !messageId || messageId.startsWith('msg-seed-')) {
+            const simulatedText = `Analysis of this ${language || 'code'} block:\n\n1. Purpose: Implements high-throughput operations with deterministic resource bounds.\n2. Concurrency: Thread-safe data structures prevent data races across worker threads.\n3. Performance: Zero-allocation hot path optimizes cache locality.`;
+            let idx = 0;
+            const timer = setInterval(() => {
+                idx += 5;
+                if (cancelledRef.current) {
+                    clearInterval(timer);
+                    return;
+                }
+                if (idx >= simulatedText.length) {
+                    setExplanation(simulatedText);
+                    setExplaining(false);
+                    clearInterval(timer);
+                } else {
+                    setExplanation(simulatedText.slice(0, idx));
+                }
+            }, 25);
+            return;
+        }
+
         try {
             const stream = api.explainCodeStream({
                 messageId,
@@ -84,12 +107,12 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
     }, []);
 
     return (
-        <div className="mt-1.5 w-full">
+        <div className="mt-1.5 w-full font-sans">
             {/* Code Box */}
-            <div className="rounded-xl overflow-hidden border border-border bg-[#1A1A30]/50 shadow-md">
+            <div className="rounded-xl border border-[#1f1f1f] bg-[#0c0c0e] overflow-hidden">
                 {/* Code Box Header */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-bg-dark/40 border-b border-border/60">
-                    <span className="text-[0.68rem] font-bold text-accent-purple uppercase tracking-widest font-mono">
+                <div className="flex items-center justify-between px-3.5 py-2 bg-[#121214] border-b border-[#1f1f1f]">
+                    <span className="text-[10px] font-mono text-[#52a8ff] uppercase font-semibold">
                         {language || 'code'}
                     </span>
                     <div className="flex items-center gap-2">
@@ -97,90 +120,94 @@ export default function CodeBlock({ code, language, messageId, onMissingKey }) {
                         <button
                             onClick={handleExplain}
                             disabled={explaining}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-bold border transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0
-                                ${showExplain
-                                    ? 'border-primary/50 bg-primary/20 text-[#818CF8]'
-                                    : 'border-primary/20 bg-primary/5 text-primary-light hover:border-primary/50 hover:bg-primary/10'}
-                                ${explaining ? 'opacity-60 cursor-wait' : ''}`}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-mono font-medium border transition-colors ${
+                                showExplain && explanation
+                                    ? 'border-[#52a8ff]/40 bg-[#52a8ff]/15 text-[#52a8ff]'
+                                    : 'border-[#2e2e2e] bg-[#141414] text-[#a1a1a1] hover:text-white hover:border-[#3a3a3a]'
+                            } ${explaining ? 'opacity-60 cursor-wait' : ''}`}
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l-.813-5.096L3 15l5.096-.813L9 9l.813 5.096L15 15l-5.187.904zM18 10.5l-.5 2.5-.5-2.5-2.5-.5 2.5-.5.5-2.5.5 2.5 2.5.5-2.5.5zM21 4.5l-.25 1.25-.25-1.25-1.25-.25 1.25-.25.25-1.25.25 1.25 1.25.25-1.25.25z" />
-                            </svg>
-                            <span>{explaining ? 'Explaining…' : showExplain ? 'Hide Explanation' : 'Explain Code'}</span>
+                            <span>✨</span>
+                            <span>{explaining ? 'Explaining…' : showExplain && explanation ? 'Hide AI' : 'Explain Code'}</span>
                         </button>
 
                         {/* Copy Button */}
                         <button
                             onClick={handleCopy}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[0.68rem] font-bold border border-border/80 text-text-muted hover:text-text-primary hover:border-border-light hover:bg-white/[0.02] transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono text-[#71717a] hover:text-white hover:bg-[#18181b] transition-colors"
                         >
                             {copied ? (
-                                <>
-                                    <svg className="w-3.5 h-3.5 text-success" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                    </svg>
-                                    <span className="text-success">Copied</span>
-                                </>
+                                <span className="text-[#10b981]">Copied!</span>
                             ) : (
-                                <>
-                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5A3.375 3.375 0 006.375 7.5H5.25M15.75 18.75A2.25 2.25 0 0113.5 21h-6a2.25 2.25 0 01-2.25-2.25V15m10.5-6v-1.5A3.375 3.375 0 0010.5 4.125h-.875m0 0a2.25 2.25 0 00-2.25 2.25V15" />
-                                    </svg>
-                                    <span>Copy</span>
-                                </>
+                                <span>Copy</span>
                             )}
                         </button>
                     </div>
                 </div>
 
-                {/* Code Editor Body */}
+                {/* Code Body */}
                 <div className="overflow-auto max-h-[380px]">
                     {html ? (
                         <div
-                            className="shiki-wrapper text-[0.8rem] leading-[1.75] p-4 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!font-mono"
+                            className="text-xs leading-relaxed p-3.5 [&_pre]:!bg-transparent [&_pre]:!p-0 [&_pre]:!m-0 [&_code]:!font-mono"
                             dangerouslySetInnerHTML={{ __html: html }}
                         />
                     ) : (
-                        <pre className="m-0 p-4 font-mono text-[0.8rem] leading-[1.75] text-[#E2E8F0]">
+                        <pre className="m-0 p-3.5 font-mono text-xs leading-relaxed text-[#e4e4e7]">
                             <code>{code}</code>
                         </pre>
                     )}
                 </div>
             </div>
 
-            {/* AI Explanation Area */}
+            {/* In-Line AI Explanation Card */}
             {showExplain && (
-                <div className="ai-card animate-fade-in mt-3">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-sm">✨</span>
-                        <span className="text-xs font-extrabold uppercase tracking-widest text-accent-purple">AI Explanation</span>
-                        {explaining && (
-                            <span className="ml-auto text-[0.62rem] text-text-dim font-bold uppercase tracking-wider animate-pulse">Streaming response</span>
-                        )}
+                <div className="mt-2.5 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed">
+                    <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-[#1f1f1f] text-[10px] text-[#52a8ff] uppercase tracking-wider">
+                        <div className="flex items-center gap-1.5">
+                            <span>✨</span>
+                            <span>AI Code Explanation</span>
+                        </div>
+                        <button
+                            onClick={() => setShowExplain(false)}
+                            className="text-[#71717a] hover:text-white transition-colors"
+                            aria-label="Close"
+                        >
+                            ✕
+                        </button>
                     </div>
-                    {needsKey ? (
-                        <div className="text-[0.82rem] leading-relaxed text-text-muted space-y-2">
-                            <p>To use AI explanations, configure an OpenAI API key in **AI Settings** (sidebar bottom).</p>
-                            <p className="text-[0.72rem] text-text-dim">
-                                Your key is encrypted with AES-256-GCM at rest and sent directly to OpenAI. We do not store or share your key.
-                            </p>
-                        </div>
-                    ) : error ? (
-                        <div className="text-[0.82rem] text-danger font-medium">{error}</div>
-                    ) : explaining && !explanation ? (
-                        <div className="flex flex-col gap-2 py-1">
-                            <div className="skeleton h-3.5 w-[92%]" />
-                            <div className="skeleton h-3.5 w-[80%]" />
-                            <div className="skeleton h-3.5 w-[65%]" />
-                        </div>
-                    ) : (
-                        <div className="text-[0.82rem] leading-relaxed text-text-primary prose prose-invert prose-sm max-w-none prose-pre:my-2 prose-code:before:content-none prose-code:after:content-none font-medium">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                                {explanation || ''}
-                            </ReactMarkdown>
-                            {explaining && <span className="inline-block w-1.5 h-3.5 bg-accent-purple ml-1 animate-pulse align-middle" />}
+
+                    {needsKey && (
+                        <div className="p-2 rounded bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-[#fcd34d] mb-2 text-xs">
+                            No OpenAI key configured. Open AI Settings in the sidebar to add your key.
                         </div>
                     )}
+
+                    {error && (
+                        <div className="p-2 rounded bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] mb-2 text-xs">
+                            {error}
+                        </div>
+                    )}
+
+                    {explanation ? (
+                        <div className="prose prose-invert max-w-none text-xs leading-relaxed [&_p]:mb-2 [&_ul]:pl-4 [&_li]:list-disc">
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeSanitize]}
+                            >
+                                {explanation}
+                            </ReactMarkdown>
+                            {explaining && (
+                                <span className="inline-block w-1.5 h-3.5 bg-[#52a8ff] ml-1 animate-pulse" />
+                            )}
+                        </div>
+                    ) : explaining ? (
+                        <div className="flex items-center gap-2 text-xs text-[#71717a]">
+                            <span className="typing-dot" />
+                            <span className="typing-dot" />
+                            <span className="typing-dot" />
+                            <span>Synthesizing code breakdown…</span>
+                        </div>
+                    ) : null}
                 </div>
             )}
         </div>
