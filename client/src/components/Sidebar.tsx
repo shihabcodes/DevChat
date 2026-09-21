@@ -1,6 +1,21 @@
 'use client';
 
 import { useState } from 'react';
+import { Workspace, Channel, OnlineUser, User } from '@/types';
+
+export interface SidebarProps {
+    workspace: Workspace | null;
+    channels: Channel[];
+    activeChannel: Channel | null;
+    onSelectChannel: (channel: Channel) => void;
+    onCreateChannel: (name: string) => void;
+    onlineUsers: OnlineUser[];
+    currentUser: User | null;
+    onLogout: () => void;
+    onOpenAISettings: () => void;
+    hasOpenaiKey?: boolean;
+    isDemo?: boolean;
+}
 
 export default function Sidebar({
     workspace,
@@ -14,12 +29,12 @@ export default function Sidebar({
     onOpenAISettings,
     hasOpenaiKey,
     isDemo,
-}) {
-    const [showNewChannel, setShowNewChannel] = useState(false);
-    const [newChannelName, setNewChannelName] = useState('');
-    const [showInvite, setShowInvite] = useState(false);
+}: SidebarProps) {
+    const [showNewChannel, setShowNewChannel] = useState<boolean>(false);
+    const [newChannelName, setNewChannelName] = useState<string>('');
+    const [showInvite, setShowInvite] = useState<boolean>(false);
 
-    const handleCreateChannel = (e) => {
+    const handleCreateChannel = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (newChannelName.trim()) {
             onCreateChannel(newChannelName.trim());
@@ -62,7 +77,11 @@ export default function Sidebar({
                             </div>
                             <code
                                 className="text-white font-mono text-xs cursor-pointer block py-1 px-2 bg-black rounded border border-[#2e2e2e] text-center hover:border-[#52a8ff] transition-colors"
-                                onClick={() => navigator.clipboard.writeText(workspace.inviteCode)}
+                                onClick={() => {
+                                    if (workspace?.inviteCode) {
+                                        navigator.clipboard.writeText(workspace.inviteCode);
+                                    }
+                                }}
                             >
                                 {workspace.inviteCode}
                             </code>

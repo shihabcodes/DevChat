@@ -3,13 +3,32 @@
 import { useEffect, useState } from 'react';
 import api from '@/lib/api';
 
-export default function AISettings({ open, onClose, onChange }) {
-    const [keyInfo, setKeyInfo] = useState(null);
-    const [draft, setDraft] = useState('');
-    const [testing, setTesting] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [testResult, setTestResult] = useState(null);
-    const [error, setError] = useState(null);
+export interface KeyInfo {
+    hasKey?: boolean;
+    mask?: string | null;
+    setAt?: string | null;
+}
+
+export interface TestResult {
+    ok: boolean;
+    reason?: string;
+    mask?: string;
+    message?: string;
+}
+
+interface AISettingsProps {
+    open: boolean;
+    onClose: () => void;
+    onChange?: (info: KeyInfo) => void;
+}
+
+export default function AISettings({ open, onClose, onChange }: AISettingsProps) {
+    const [keyInfo, setKeyInfo] = useState<KeyInfo | null>(null);
+    const [draft, setDraft] = useState<string>('');
+    const [testing, setTesting] = useState<boolean>(false);
+    const [saving, setSaving] = useState<boolean>(false);
+    const [testResult, setTestResult] = useState<TestResult | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!open) return;
@@ -18,12 +37,12 @@ export default function AISettings({ open, onClose, onChange }) {
         setDraft('');
         api.getKey()
             .then(setKeyInfo)
-            .catch((e) => setError(e.message));
+            .catch((e: Error) => setError(e.message));
     }, [open]);
 
     useEffect(() => {
         if (!open) return;
-        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
     }, [open, onClose]);
@@ -43,7 +62,7 @@ export default function AISettings({ open, onClose, onChange }) {
             setKeyInfo(info);
             setDraft('');
             if (onChange) onChange(info);
-        } catch (e) {
+        } catch (e: any) {
             setError(e.message);
         } finally {
             setSaving(false);
@@ -57,7 +76,7 @@ export default function AISettings({ open, onClose, onChange }) {
         try {
             const res = await api.testKey();
             setTestResult({ ok: res.ok, reason: res.reason, mask: res.mask });
-        } catch (e) {
+        } catch (e: any) {
             setTestResult({ ok: false, reason: 'request_failed', message: e.message });
         } finally {
             setTesting(false);
@@ -72,7 +91,7 @@ export default function AISettings({ open, onClose, onChange }) {
             setKeyInfo(info);
             setTestResult(null);
             if (onChange) onChange(info);
-        } catch (e) {
+        } catch (e: any) {
             setError(e.message);
         }
     };

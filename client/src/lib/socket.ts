@@ -1,15 +1,15 @@
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 
-let socket = null;
+let socket: Socket | null = null;
 
-function backendUrl() {
+function backendUrl(): string {
     if (process.env.NEXT_PUBLIC_API_URL) {
         return process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, '');
     }
     return 'http://localhost:5001';
 }
 
-export const getSocket = () => {
+export const getSocket = (): Socket | null => {
     if (socket) return socket;
     const token = typeof window !== 'undefined' ? localStorage.getItem('devchat_token') : null;
     if (!token) return null;
@@ -26,20 +26,20 @@ export const getSocket = () => {
     return socket;
 };
 
-export const connectSocket = () => {
+export const connectSocket = (): Socket | null => {
     const s = getSocket();
     if (s && !s.connected) s.connect();
     return s;
 };
 
-export const disconnectSocket = () => {
+export const disconnectSocket = (): void => {
     if (socket) {
         socket.disconnect();
         socket = null;
     }
 };
 
-export const resetSocket = () => {
+export const resetSocket = (): Socket | null => {
     disconnectSocket();
     return connectSocket();
 };

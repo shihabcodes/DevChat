@@ -1,9 +1,26 @@
 'use client';
 
 import CodeBlock from './CodeBlock';
+import { Message } from '@/types';
 
-export default function MessageBubble({ message, isOwn, onExplain, onMissingKey, onRetry, isDemo }) {
-    const date = new Date(message.createdAt);
+export interface MessageBubbleProps {
+    message: Message;
+    isOwn: boolean;
+    onExplain?: any;
+    onMissingKey?: () => void;
+    onRetry?: (message: Message) => void;
+    isDemo?: boolean;
+}
+
+export default function MessageBubble({
+    message,
+    isOwn,
+    onExplain,
+    onMissingKey,
+    onRetry,
+    isDemo,
+}: MessageBubbleProps) {
+    const date = message.createdAt ? new Date(message.createdAt) : new Date();
     const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const isPending = Boolean(message._pending);
     const isFailed = Boolean(message._failed);
@@ -59,10 +76,9 @@ export default function MessageBubble({ message, isOwn, onExplain, onMissingKey,
 
                 {message.type === 'code' ? (
                     <CodeBlock
-                        code={message.content}
+                        code={message.content || ''}
                         language={message.language}
                         messageId={message._id}
-                        onExplain={onExplain}
                         onMissingKey={onMissingKey}
                         cachedExplanation={message.aiExplanation}
                         isDemo={isDemo}

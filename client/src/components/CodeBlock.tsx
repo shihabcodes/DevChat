@@ -8,16 +8,32 @@ import rehypeSanitize from 'rehype-sanitize';
 import api, { ApiError } from '@/lib/api';
 import { highlightCode } from '@/lib/highlight';
 
-export default function CodeBlock({ code, language, messageId, onMissingKey, cachedExplanation, isDemo }) {
-    const [copied, setCopied] = useState(false);
-    const [explaining, setExplaining] = useState(false);
-    const [explanation, setExplanation] = useState(cachedExplanation || null);
-    const [showExplain, setShowExplain] = useState(Boolean(cachedExplanation));
-    const [html, setHtml] = useState(null);
-    const [needsKey, setNeedsKey] = useState(false);
-    const [error, setError] = useState(null);
-    const streamRef = useRef(null);
-    const cancelledRef = useRef(false);
+export interface CodeBlockProps {
+    code: string;
+    language?: string;
+    messageId?: string;
+    onMissingKey?: () => void;
+    cachedExplanation?: string;
+    isDemo?: boolean;
+}
+
+export default function CodeBlock({
+    code,
+    language,
+    messageId,
+    onMissingKey,
+    cachedExplanation,
+    isDemo,
+}: CodeBlockProps) {
+    const [copied, setCopied] = useState<boolean>(false);
+    const [explaining, setExplaining] = useState<boolean>(false);
+    const [explanation, setExplanation] = useState<string | null>(cachedExplanation || null);
+    const [showExplain, setShowExplain] = useState<boolean>(Boolean(cachedExplanation));
+    const [html, setHtml] = useState<string | null>(null);
+    const [needsKey, setNeedsKey] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const streamRef = useRef<{ cancel: () => void; result: Promise<{ text: string }> } | null>(null);
+    const cancelledRef = useRef<boolean>(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -77,14 +93,14 @@ export default function CodeBlock({ code, language, messageId, onMissingKey, cac
                 messageId,
                 code,
                 language,
-                onDelta: (delta, full) => setExplanation(full),
+                onDelta: (_delta: string, full: string) => setExplanation(full),
             });
             streamRef.current = stream;
             const { text } = await stream.result;
             if (cancelledRef.current) return;
             if (text) setExplanation(text);
             setExplaining(false);
-        } catch (err) {
+        } catch (err: any) {
             if (cancelledRef.current) return;
             setExplaining(false);
             if (err instanceof ApiError && err.code === 'NO_OPENAI_KEY') {

@@ -2,6 +2,19 @@
 
 import { useRef, useEffect } from 'react';
 import MessageBubble from './MessageBubble';
+import { Channel, Message, User, TypingUser } from '@/types';
+
+export interface ChatAreaProps {
+    messages: Message[];
+    channel: Channel | null;
+    currentUser: User | null;
+    typingUsers?: TypingUser[];
+    onExplain?: any;
+    onMissingKey?: () => void;
+    onRetry?: (message: Message) => void;
+    loading?: boolean;
+    isDemo?: boolean;
+}
 
 export default function ChatArea({
     messages,
@@ -13,9 +26,9 @@ export default function ChatArea({
     onRetry,
     loading,
     isDemo,
-}) {
-    const bottomRef = useRef(null);
-    const containerRef = useRef(null);
+}: ChatAreaProps) {
+    const bottomRef = useRef<HTMLDivElement | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -30,10 +43,10 @@ export default function ChatArea({
                     <h3 className="text-xs font-semibold text-white truncate tracking-tight">
                         {channel?.name || 'general'}
                     </h3>
-                    {channel?.description && (
+                    {channel?.topic && (
                         <>
                             <div className="w-px h-3 bg-[#2e2e2e] mx-1" />
-                            <span className="text-xs text-[#71717a] truncate">{channel.description}</span>
+                            <span className="text-xs text-[#71717a] truncate">{channel.topic}</span>
                         </>
                     )}
                 </div>
@@ -97,7 +110,7 @@ export default function ChatArea({
                         <span className="typing-dot" />
                     </span>
                     <span>
-                        <span className="text-[#a1a1a1]">{typingUsers.map((u) => u.displayName).join(', ')}</span>{' '}
+                        <span className="text-[#a1a1a1]">{typingUsers.map((u) => u.displayName || u.userId).join(', ')}</span>{' '}
                         {typingUsers.length === 1 ? 'is' : 'are'} typing…
                     </span>
                 </div>

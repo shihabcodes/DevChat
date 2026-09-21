@@ -2,28 +2,30 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import api, { ApiError } from '@/lib/api';
+
+type AuthMode = 'login' | 'register' | 'invite';
 
 export default function Home() {
     const router = useRouter();
-    const [mode, setMode] = useState('login'); // 'login' | 'register' | 'invite'
-    const [authModalOpen, setAuthModalOpen] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [displayName, setDisplayName] = useState('');
-    const [inviteCode, setInviteCode] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [checkingAuth, setCheckingAuth] = useState(true);
-    const [demoLoading, setDemoLoading] = useState(false);
+    const [mode, setMode] = useState<AuthMode>('login');
+    const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [displayName, setDisplayName] = useState<string>('');
+    const [inviteCode, setInviteCode] = useState<string>('');
+    const [error, setError] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
+    const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
+    const [demoLoading, setDemoLoading] = useState<boolean>(false);
 
     // Interactive Preview Mock State
-    const [activeMockChannel, setActiveMockChannel] = useState('general');
-    const [mockExplaining, setMockExplaining] = useState(false);
-    const [mockExplanation, setMockExplanation] = useState(null);
-    const [mockCopied, setMockCopied] = useState(false);
-    const explainTimerRef = useRef(null);
+    const [activeMockChannel, setActiveMockChannel] = useState<string>('general');
+    const [mockExplaining, setMockExplaining] = useState<boolean>(false);
+    const [mockExplanation, setMockExplanation] = useState<string | null>(null);
+    const [mockCopied, setMockCopied] = useState<boolean>(false);
+    const explainTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         const token = localStorage.getItem('devchat_token');
@@ -47,14 +49,14 @@ export default function Home() {
     }, [router]);
 
     useEffect(() => {
-        const handleKeyDown = (e) => {
+        const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') setAuthModalOpen(false);
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setLoading(true);
@@ -68,24 +70,27 @@ export default function Home() {
                     router.push(`/workspace/${data.workspaces[0]._id}`);
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             setError(err.message || 'Authentication failed');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleGoogleSuccess = async (credentialResponse) => {
+    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
         setError('');
         setLoading(true);
         try {
+            if (!credentialResponse.credential) {
+                throw new Error('Missing Google credential');
+            }
             const data = await api.googleLogin(credentialResponse.credential);
             if (data.workspaces && data.workspaces.length > 0) {
                 router.push(`/workspace/${data.workspaces[0]._id}`);
             } else if (data.workspace) {
                 router.push(`/workspace/${data.workspace._id}`);
             }
-        } catch (err) {
+        } catch (err: any) {
             if (err instanceof ApiError && err.code === 'EXISTING_PASSWORD_ACCOUNT') {
                 setError('An account with this email exists. Sign in with password first.');
             } else {
@@ -98,14 +103,14 @@ export default function Home() {
 
     const handleGoogleError = () => setError('Google Login Failed');
 
-    const handleJoinWorkspace = async (e) => {
+    const handleJoinWorkspace = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
             const data = await api.joinWorkspace(inviteCode);
             router.push(`/workspace/${data._id}`);
-        } catch (err) {
+        } catch (err: any) {
             setError(err.message || 'Invalid invite code');
         } finally {
             setLoading(false);
@@ -116,7 +121,7 @@ export default function Home() {
         setError('');
         setDemoLoading(true);
 
-        const timeoutPromise = new Promise((_, reject) =>
+        const timeoutPromise = new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('timeout')), 4000)
         );
 
@@ -157,7 +162,7 @@ export default function Home() {
             if (currentIdx >= fullText.length) {
                 setMockExplanation(fullText);
                 setMockExplaining(false);
-                clearInterval(explainTimerRef.current);
+                if (explainTimerRef.current) clearInterval(explainTimerRef.current);
             } else {
                 setMockExplanation(fullText.slice(0, currentIdx));
             }

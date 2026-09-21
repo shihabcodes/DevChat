@@ -10,13 +10,25 @@ const LANGUAGES = [
     'json', 'html', 'css', 'yaml', 'c', 'cpp', 'java', 'markdown',
 ];
 
-export default function MessageInput({ onSend, onTyping, onStopTyping, disabled = false }) {
-    const [content, setContent] = useState('');
-    const [codeMode, setCodeMode] = useState(false);
-    const [language, setLanguage] = useState('typescript');
-    const [codeContent, setCodeContent] = useState('');
-    const inputRef = useRef(null);
-    const typingTimeoutRef = useRef(null);
+export interface MessageInputProps {
+    onSend: (content: string, type?: string, language?: string) => void;
+    onTyping?: () => void;
+    onStopTyping?: () => void;
+    disabled?: boolean;
+}
+
+export default function MessageInput({
+    onSend,
+    onTyping,
+    onStopTyping,
+    disabled = false,
+}: MessageInputProps) {
+    const [content, setContent] = useState<string>('');
+    const [codeMode, setCodeMode] = useState<boolean>(false);
+    const [language, setLanguage] = useState<string>('typescript');
+    const [codeContent, setCodeContent] = useState<string>('');
+    const inputRef = useRef<HTMLTextAreaElement | null>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (!codeMode && inputRef.current) {
@@ -26,7 +38,7 @@ export default function MessageInput({ onSend, onTyping, onStopTyping, disabled 
 
     const handleTyping = () => {
         onTyping?.();
-        clearTimeout(typingTimeoutRef.current);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = setTimeout(() => {
             onStopTyping?.();
         }, 2000);
@@ -46,10 +58,10 @@ export default function MessageInput({ onSend, onTyping, onStopTyping, disabled 
             }
         }
         onStopTyping?.();
-        clearTimeout(typingTimeoutRef.current);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey && !codeMode) {
             e.preventDefault();
             handleSend();

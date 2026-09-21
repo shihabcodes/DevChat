@@ -9,17 +9,19 @@ import AISettings from '@/components/AISettings';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import api from '@/lib/api';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
+import { User, Workspace, Channel, Message, OnlineUser, TypingUser } from '@/types';
+import type { Socket } from 'socket.io-client';
 
 const TEMP_ID = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 // Fallback seed data for instant client-side demo mode
-const DEMO_CHANNELS = [
+const DEMO_CHANNELS: Channel[] = [
     { _id: 'ch-general', name: 'general' },
     { _id: 'ch-ai-codegen', name: 'ai-codegen' },
     { _id: 'ch-architecture', name: 'architecture' },
 ];
 
-const DEMO_SEED_MESSAGES = {
+const DEMO_SEED_MESSAGES: Record<string, Message[]> = {
     'ch-general': [
         {
             _id: 'msg-seed-1',
@@ -82,30 +84,30 @@ const DEMO_SEED_MESSAGES = {
 
 export default function WorkspacePage() {
     const router = useRouter();
-    const params = useParams();
-    const workspaceId = params.workspaceId;
+    const params = useParams<{ workspaceId: string }>();
+    const workspaceId = params?.workspaceId as string;
 
     const isDemoWorkspace = workspaceId === 'demo-workspace';
 
-    const [currentUser, setCurrentUser] = useState(null);
-    const [workspace, setWorkspace] = useState(null);
-    const [channels, setChannels] = useState([]);
-    const [activeChannel, setActiveChannel] = useState(null);
-    const [messages, setMessages] = useState([]);
-    const [onlineUsers, setOnlineUsers] = useState([
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [workspace, setWorkspace] = useState<Workspace | null>(null);
+    const [channels, setChannels] = useState<Channel[]>([]);
+    const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([
         { displayName: 'Alex (Staff Eng)' },
         { displayName: 'Sarah (Founding Eng)' },
         { displayName: 'Shihab (AI Lead)' }
     ]);
-    const [typingUsers, setTypingUsers] = useState([]);
-    const [socket, setSocket] = useState(null);
-    const [connectionState, setConnectionState] = useState('connected');
-    const [loadingMessages, setLoadingMessages] = useState(true);
-    const [initialLoading, setInitialLoading] = useState(true);
-    const [showAISettings, setShowAISettings] = useState(false);
-    const [hasKey, setHasKey] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const pendingTimers = useRef(new Map());
+    const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+    const [socket, setSocket] = useState<Socket | null>(null);
+    const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'reconnecting' | 'connecting'>('connected');
+    const [loadingMessages, setLoadingMessages] = useState<boolean>(true);
+    const [initialLoading, setInitialLoading] = useState<boolean>(true);
+    const [showAISettings, setShowAISettings] = useState<boolean>(false);
+    const [hasKey, setHasKey] = useState<boolean>(false);
+    const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+    const pendingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
     // Initialize User & Workspace
     useEffect(() => {
@@ -113,7 +115,7 @@ export default function WorkspacePage() {
 
         if (isDemoWorkspace || !token) {
             // Setup demo guest session
-            const guestUser = {
+            const guestUser: User = {
                 _id: 'user-guest',
                 displayName: 'Guest Developer',
                 email: 'guest@devchat.local',
@@ -134,13 +136,13 @@ export default function WorkspacePage() {
         api.token = token;
         api.getMe()
             .then((data) => {
-                setCurrentUser(data.user);
+                setCurrentUser(data.user || null);
                 setHasKey(Boolean(data.hasOpenaiKey));
             })
             .catch(() => {
                 // If getMe fails, fallback gracefully to demo workspace
                 console.warn('Authentication check failed; falling back to demo session.');
-                const guestUser = {
+                const guestUser: User = {
                     _id: 'user-guest',
                     displayName: 'Guest Developer',
                     email: 'guest@devchat.local',
@@ -208,8 +210,8 @@ export default function WorkspacePage() {
         s.io.on('reconnect_attempt', onReconnecting);
         s.io.on('reconnect', onReconnect);
 
-        s.on('onlineUsers', setOnlineUsers);
-        s.on('newMessage', (msg) => {
+        s.on('onlineUsers', (users: OnlineUser[]) => setOnlineUsers(users));
+        s.on('newMessage', (msg: Message) => {
             setMessages((prev) => {
                 if (msg._tempId) {
                     const idx = prev.findIndex((m) => m._id === msg._tempId);
@@ -225,23 +227,24 @@ export default function WorkspacePage() {
             });
 
             if (msg._tempId && pendingTimers.current.has(msg._tempId)) {
-                clearTimeout(pendingTimers.current.get(msg._tempId));
+                const t = pendingTimers.current.get(msg._tempId);
+                if (t) clearTimeout(t);
                 pendingTimers.current.delete(msg._tempId);
             }
         });
 
-        s.on('userTyping', (data) => {
+        s.on('userTyping', (data: TypingUser) => {
             setTypingUsers((prev) => {
                 if (prev.find((u) => u.userId === data.userId)) return prev;
                 return [...prev, data];
             });
         });
 
-        s.on('userStopTyping', (data) => {
+        s.on('userStopTyping', (data: { userId: string }) => {
             setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
         });
 
-        s.on('error', (err) => {
+        s.on('error', (err: { code?: string }) => {
             if (err.code === 'FORBIDDEN') router.push('/');
         });
 
@@ -306,11 +309,11 @@ export default function WorkspacePage() {
     }, [activeChannel, socket, isDemoWorkspace]);
 
     // Send Message Handler (with optimistic insert and demo echo)
-    const handleSendMessage = useCallback((content, type, language) => {
+    const handleSendMessage = useCallback((content: string, type?: string, language?: string) => {
         if (!activeChannel) return;
         const tempId = TEMP_ID();
 
-        const optimistic = {
+        const optimistic: Message = {
             _id: tempId,
             _pending: !isDemoWorkspace,
             content,
@@ -331,7 +334,7 @@ export default function WorkspacePage() {
             // Simulated interactive reply in demo mode
             if (type === 'code') {
                 setTimeout(() => {
-                    const botReply = {
+                    const botReply: Message = {
                         _id: `reply-${Date.now()}`,
                         content: `Nice snippet in ${language || 'code'}! Click "Explain Code" to see the AI breakdown.`,
                         type: 'text',
@@ -364,11 +367,11 @@ export default function WorkspacePage() {
         });
     }, [socket, activeChannel, currentUser, isDemoWorkspace]);
 
-    const handleRetry = useCallback((failedMsg) => {
+    const handleRetry = useCallback((failedMsg: Message) => {
         setMessages((prev) => prev.filter((m) => m._id !== failedMsg._id));
         if (socket && activeChannel) {
             const tempId = TEMP_ID();
-            const optimistic = {
+            const optimistic: Message = {
                 _id: tempId,
                 _pending: true,
                 content: failedMsg.content,
@@ -412,9 +415,9 @@ export default function WorkspacePage() {
         socket.emit('stopTyping', activeChannel._id);
     }, [socket, activeChannel, isDemoWorkspace]);
 
-    const handleCreateChannel = useCallback(async (name) => {
+    const handleCreateChannel = useCallback(async (name: string) => {
         if (isDemoWorkspace) {
-            const newCh = { _id: `ch-${Date.now()}`, name };
+            const newCh: Channel = { _id: `ch-${Date.now()}`, name };
             setChannels((prev) => [...prev, newCh]);
             setActiveChannel(newCh);
             setSidebarOpen(false);
@@ -430,7 +433,7 @@ export default function WorkspacePage() {
         }
     }, [workspaceId, isDemoWorkspace]);
 
-    const handleSelectChannel = useCallback((channel) => {
+    const handleSelectChannel = useCallback((channel: Channel) => {
         setActiveChannel(channel);
         setSidebarOpen(false);
     }, []);
