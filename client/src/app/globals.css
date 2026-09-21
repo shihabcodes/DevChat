@@ -224,3 +224,68 @@ html, body {
 .typing-dot:nth-child(3) {
   animation-delay: 0.4s;
 }
+
+/* === Spark Badge & Button Micro-Interactions === */
+.spark-badge {
+  position: relative;
+  background: linear-gradient(90deg, rgba(82, 168, 255, 0.12), rgba(168, 85, 247, 0.12), rgba(16, 185, 129, 0.12));
+  border: 1px solid rgba(82, 168, 255, 0.3);
+  box-shadow: 0 0 20px rgba(82, 168, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.spark-badge:hover {
+  border-color: rgba(82, 168, 255, 0.55);
+  box-shadow: 0 0 30px rgba(82, 168, 255, 0.28);
+  transform: translateY(-1px);
+}
+
+.cta-primary {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 0 28px rgba(255, 255, 255, 0.18), 0 4px 14px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cta-primary:hover {
+  background: #f4f4f5;
+  transform: translateY(-2px);
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.cta-primary:active {
+  transform: translateY(0);
+}
+
+.cta-secondary {
+  background: rgba(18, 18, 21, 0.85);
+  border: 1px solid #27272a;
+  color: #ededed;
+  backdrop-filter: blur(12px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cta-secondary:hover {
+  background: rgba(28, 28, 34, 0.95);
+  border-color: rgba(82, 168, 255, 0.4);
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(82, 168, 255, 0.15);
+}
+
+.cta-secondary:active {
+  transform: translateY(0);
+}
+
+@keyframes floatScroll {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+.animate-float {
+  animation: floatScroll 2s ease-in-out infinite;
+}

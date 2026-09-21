@@ -188,29 +188,48 @@ export default function Home() {
 
             {/* Navigation Bar */}
             <header className="sticky top-0 z-40 w-full border-b border-[#1f1f1f] bg-black/80 backdrop-blur-md">
-                <div className="max-w-6xl w-full mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-                    <a href="#" className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-mono font-bold">
-                            &lt;/&gt;
+                <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
+                    {/* Logo + Version Badge */}
+                    <div className="flex items-center gap-3">
+                        <a href="#" className="flex items-center gap-2.5 group">
+                            <span className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-mono font-bold group-hover:border-[#52a8ff]/40 transition-colors shadow-[0_0_12px_rgba(82,168,255,0.15)]">
+                                &lt;/&gt;
+                            </span>
+                            <span className="font-bold text-base tracking-tight text-white flex items-center gap-1.5">
+                                DevChat<span className="text-[#52a8ff]">.</span>
+                            </span>
+                        </a>
+                        <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-[#27272a] bg-[#141414] text-[#a1a1a1]">
+                            v2.4
                         </span>
-                        <span className="font-semibold text-sm tracking-tight text-white">
-                            DevChat<span className="text-[#52a8ff] ml-0.5">.</span>
-                        </span>
-                    </a>
+                    </div>
 
-                    <div className="flex items-center gap-2.5 sm:gap-3">
+                    {/* Center Navigation Links */}
+                    <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-[#a1a1aa]">
+                        <a href="#preview" className="hover:text-white transition-colors">Interactive IDE</a>
+                        <a href="#features" className="hover:text-white transition-colors">Features</a>
+                        <a href="#architecture" className="hover:text-white transition-colors">Architecture</a>
+                        <a href="https://github.com/shihabcodes/DevChat" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
+                    </nav>
+
+                    {/* Right Actions */}
+                    <div className="flex items-center gap-3">
                         <a
                             href="https://github.com/shihabcodes/DevChat"
                             target="_blank"
                             rel="noreferrer"
-                            className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] text-[#a1a1a1] hover:text-white text-xs font-mono transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] hover:bg-[#18181b] hover:border-[#3f3f46] text-[#a1a1a1] hover:text-white text-xs font-mono transition-all"
                         >
-                            <span>★ Star on GitHub</span>
+                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                            </svg>
+                            <span>Star</span>
+                            <span className="px-1.5 py-0.2 rounded-full bg-[#1c1c1f] text-[10px] text-white font-mono">142</span>
                         </a>
 
                         <button
                             onClick={() => { setMode('login'); setAuthModalOpen(true); }}
-                            className="text-xs text-[#a1a1a1] hover:text-white transition-colors px-2 py-1.5"
+                            className="text-xs font-medium text-[#a1a1a1] hover:text-white transition-colors px-2 py-1.5"
                         >
                             Sign In
                         </button>
@@ -218,7 +237,7 @@ export default function Home() {
                         <button
                             onClick={handleTryDemo}
                             disabled={demoLoading}
-                            className="inline-flex items-center gap-1 px-3.5 sm:px-4 py-1.5 rounded-full bg-white text-black text-xs font-semibold hover:bg-[#e4e4e7] transition-all disabled:opacity-60"
+                            className="cta-primary inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold disabled:opacity-60"
                         >
                             <span>{demoLoading ? 'Launching…' : 'Try Demo'}</span>
                             <span>→</span>
@@ -228,38 +247,44 @@ export default function Home() {
             </header>
 
             {/* PAGE 1: Hero Section (Full Viewport Centered) */}
-            <section className="w-full min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center text-center px-4 py-12 relative">
-                {/* Status Pill */}
-                <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full border border-[#27272a] bg-white/[0.03] text-xs font-mono text-[#a1a1a1] mb-6">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981] animate-pulse"></span>
-                    <span className="text-white font-medium">DEVCHAT 2.0</span>
-                    <span className="text-[#565656]">·</span>
-                    <span>IN-LINE AI MESSENGER</span>
+            <section className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center text-center px-4 sm:px-6 py-20 relative">
+                {/* Sparky Status Pill */}
+                <div className="spark-badge inline-flex items-center gap-2.5 h-8 px-4 rounded-full text-xs font-mono text-white mb-8 cursor-default">
+                    <span className="text-xs">✨</span>
+                    <span className="font-semibold tracking-wide text-white">DEVCHAT 2.0</span>
+                    <span className="text-[#71717a]">·</span>
+                    <span className="bg-gradient-to-r from-[#52a8ff] to-[#a855f7] bg-clip-text text-transparent font-medium">
+                        IN-LINE AI MESSENGER
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981] animate-pulse ml-0.5"></span>
                 </div>
 
                 {/* Hero Title */}
-                <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight text-white leading-[1.1] max-w-4xl mb-6 px-2">
-                    Real-time chat built for developer flow.
+                <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[5.5rem] font-extrabold tracking-tight text-white leading-[1.08] max-w-5xl mb-8 px-2">
+                    Real-time chat built for{' '}
+                    <span className="bg-gradient-to-r from-white via-[#f4f4f5] to-[#52a8ff] bg-clip-text text-transparent">
+                        developer flow.
+                    </span>
                 </h1>
 
                 {/* Hero Subtitle */}
-                <p className="text-base sm:text-lg text-[#a1a1a1] leading-relaxed max-w-2xl mx-auto mb-10 font-normal px-2">
+                <p className="text-base sm:text-xl text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto mb-12 font-normal px-2">
                     Share syntax-highlighted code, stream in-line AI explanations, and collaborate in sub-50ms channels.
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto px-4 mb-16">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto px-4 mb-20">
                     <button
                         onClick={handleTryDemo}
                         disabled={demoLoading}
-                        className="w-full sm:w-auto h-12 px-8 rounded-full bg-white text-black text-sm font-semibold hover:bg-neutral-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.18)] flex items-center justify-center gap-2 disabled:opacity-60"
+                        className="cta-primary w-full sm:w-auto h-13 px-9 rounded-full text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
                     >
                         <span>{demoLoading ? 'Launching…' : 'Try Live Demo'}</span>
-                        <span className="text-xs">→</span>
+                        <span className="text-xs font-bold">→</span>
                     </button>
                     <button
                         onClick={() => { setMode('register'); setAuthModalOpen(true); }}
-                        className="w-full sm:w-auto h-12 px-8 rounded-full border border-[#27272a] bg-[#121214] text-[#ededed] text-sm font-medium hover:border-[#3f3f46] hover:bg-[#18181b] transition-all flex items-center justify-center"
+                        className="cta-secondary w-full sm:w-auto h-13 px-9 rounded-full text-sm font-medium flex items-center justify-center"
                     >
                         Create Account
                     </button>
@@ -268,139 +293,155 @@ export default function Home() {
                 {/* Scroll Down Indicator */}
                 <a
                     href="#preview"
-                    className="inline-flex flex-col items-center gap-1.5 text-xs font-mono text-[#71717a] hover:text-[#52a8ff] transition-colors group"
+                    className="inline-flex flex-col items-center gap-2 text-xs font-mono text-[#71717a] hover:text-[#52a8ff] transition-colors group"
                 >
-                    <span>Interactive Preview</span>
-                    <span className="text-sm transition-transform group-hover:translate-y-0.5">↓</span>
+                    <span>Interactive IDE Preview</span>
+                    <span className="text-base animate-float">↓</span>
                 </a>
             </section>
 
-            {/* PAGE 2: Interactive IDE Preview Section (Full Viewport Centered) */}
-            <section id="preview" className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-20 border-t border-[#1a1a1a] relative">
+            {/* PAGE 2: Interactive IDE Preview Section (Full Viewport Centered - 75% Width) */}
+            <section id="preview" className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-24 border-t border-[#18181b] relative">
                 {/* Section Header */}
-                <div className="text-center max-w-2xl mx-auto mb-10">
-                    <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-2">
+                <div className="text-center max-w-3xl mx-auto mb-14">
+                    <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-3">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff]"></span>
-                        <span>LIVE INTERACTIVE PREVIEW</span>
+                        <span>LIVE WORKSPACE PREVIEW</span>
                     </div>
-                    <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-3">
+                    <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-4">
                         Experience DevChat in action.
                     </h2>
-                    <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed">
+                    <p className="text-sm sm:text-base text-[#a1a1aa] leading-relaxed max-w-xl mx-auto">
                         Click &quot;Explain with AI&quot; on the Rust code below to see token-by-token streaming in real time.
                     </p>
                 </div>
 
-                {/* Interactive Product Preview Widget */}
-                <div className="w-full max-w-4xl mx-auto text-left rounded-xl border border-[#27272a] bg-[#0c0c0e] shadow-[0_25px_70px_rgba(0,0,0,0.85)] overflow-hidden">
+                {/* Interactive Product Preview Widget (75% Viewport Presence) */}
+                <div className="w-full max-w-6xl xl:max-w-7xl mx-auto text-left rounded-2xl border border-[#27272a] bg-[#0c0c0e] shadow-[0_25px_80px_rgba(0,0,0,0.9)] overflow-hidden">
                     {/* Top Window Bar */}
-                    <div className="px-4 py-3 bg-[#111114] border-b border-[#222226] flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#2a2a2e]"></span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#2a2a2e]"></span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#2a2a2e]"></span>
-                            <span className="text-xs font-mono text-[#8e8e93] ml-2">devchat / #general</span>
+                    <div className="px-5 py-3.5 bg-[#111114] border-b border-[#222226] flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                            <span className="w-3 h-3 rounded-full bg-[#ff5f56]/90 shadow-[0_0_6px_#ff5f56]/40"></span>
+                            <span className="w-3 h-3 rounded-full bg-[#ffbd2e]/90 shadow-[0_0_6px_#ffbd2e]/40"></span>
+                            <span className="w-3 h-3 rounded-full bg-[#27c93f]/90 shadow-[0_0_6px_#27c93f]/40"></span>
+                            <span className="text-xs font-mono text-[#8e8e93] ml-3">devchat : engineering workspace / #general</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
-                            <span className="text-[11px] font-mono text-[#10b981]">Sub-50ms</span>
+                            <span className="text-[11px] font-mono text-[#10b981] font-medium">Sub-50ms WebSocket · Redis Active</span>
                         </div>
                     </div>
 
                     {/* Workspace Body */}
                     <div className="flex flex-col md:flex-row">
                         {/* Left Sidebar */}
-                        <div className="hidden md:block md:w-52 border-r border-[#222226] bg-[#09090b] p-3.5 space-y-4 shrink-0">
+                        <div className="hidden md:block md:w-64 border-r border-[#222226] bg-[#09090b] p-4 space-y-6 shrink-0">
                             <div>
-                                <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2 font-semibold">
+                                <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2.5 font-semibold">
                                     Channels
                                 </div>
-                                <div className="space-y-0.5">
+                                <div className="space-y-1">
                                     {[
-                                        { id: 'general', name: 'general' },
-                                        { id: 'ai-codegen', name: 'ai-codegen' },
-                                        { id: 'architecture', name: 'architecture' }
+                                        { id: 'general', name: 'general', topic: 'team discussion' },
+                                        { id: 'ai-codegen', name: 'ai-codegen', topic: 'LLM agents' },
+                                        { id: 'architecture', name: 'architecture', topic: 'RFCs & design' }
                                     ].map((ch) => (
                                         <button
                                             key={ch.id}
                                             onClick={() => setActiveMockChannel(ch.id)}
-                                            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-mono transition-all text-left ${
+                                            className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-all text-left ${
                                                 activeMockChannel === ch.id
-                                                    ? 'bg-[#18181b] text-white border border-[#2e2e32] font-medium'
-                                                    : 'text-[#71717a] hover:text-[#ededed]'
+                                                    ? 'bg-[#18181b] text-white border border-[#2e2e32] font-medium shadow-sm'
+                                                    : 'text-[#71717a] hover:text-[#ededed] hover:bg-[#121214]'
                                             }`}
                                         >
-                                            <span className="text-[#52a8ff]">#</span>
-                                            <span className="truncate">{ch.name}</span>
+                                            <div className="flex items-center gap-2 truncate">
+                                                <span className="text-[#52a8ff] font-bold">#</span>
+                                                <span className="truncate">{ch.name}</span>
+                                            </div>
+                                            <span className="text-[9px] text-[#565656] hidden lg:inline">{ch.topic}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
                             <div>
-                                <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2 font-semibold">
-                                    Members (3)
+                                <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2.5 font-semibold">
+                                    Team Members (3)
                                 </div>
-                                <div className="space-y-1.5 text-xs">
-                                    <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                        <span>Alex</span>
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex items-center justify-between px-2 py-1 rounded-md bg-white/[0.02] text-[#ededed]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
+                                            <span className="font-medium">Alex</span>
+                                        </div>
+                                        <span className="text-[10px] text-[#71717a] font-mono">Founding Eng</span>
                                     </div>
-                                    <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                        <span>Sarah</span>
+                                    <div className="flex items-center justify-between px-2 py-1 rounded-md text-[#ededed]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
+                                            <span className="font-medium">Sarah</span>
+                                        </div>
+                                        <span className="text-[10px] text-[#71717a] font-mono">Tech Lead</span>
                                     </div>
-                                    <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                        <span>Shihab</span>
+                                    <div className="flex items-center justify-between px-2 py-1 rounded-md text-[#ededed]">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
+                                            <span className="font-medium">Shihab</span>
+                                        </div>
+                                        <span className="text-[10px] text-[#71717a] font-mono">AI Engineer</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="pt-2.5 border-t border-[#1f1f1f] text-[11px] font-mono text-[#52a8ff] flex items-center gap-1.5 px-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff]"></span>
-                                <span>GPT-4o-mini Active</span>
+                            <div className="pt-3 border-t border-[#1f1f1f] text-xs font-mono text-[#52a8ff] flex items-center gap-2 px-1">
+                                <span className="w-2 h-2 rounded-full bg-[#52a8ff] shadow-[0_0_8px_#52a8ff] animate-pulse"></span>
+                                <span className="font-medium">GPT-4o-mini Active</span>
                             </div>
                         </div>
 
                         {/* Right Chat Feed */}
-                        <div className="flex-1 bg-[#020202] p-4 sm:p-5 flex flex-col justify-between gap-4 sm:gap-5">
-                            <div className="space-y-3.5 sm:space-y-4">
+                        <div className="flex-1 bg-[#020202] p-6 sm:p-7 flex flex-col justify-between gap-6">
+                            <div className="space-y-5">
                                 {/* Message 1 */}
-                                <div className="flex gap-2.5 sm:gap-3 items-start">
-                                    <div className="w-7 h-7 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#52a8ff] shrink-0 mt-0.5">
+                                <div className="flex gap-3 sm:gap-3.5 items-start">
+                                    <div className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#52a8ff] shrink-0 mt-0.5 shadow-sm">
                                         A
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 text-xs mb-1">
+                                        <div className="flex items-center gap-2 text-xs mb-1.5">
                                             <span className="font-semibold text-white">Alex</span>
-                                            <span className="text-[10px] text-[#71717a]">10:42 AM</span>
+                                            <span className="text-[10px] text-[#71717a] font-mono">10:42 AM</span>
+                                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#18181b] text-[#52a8ff] font-mono">Rust Pro</span>
                                         </div>
-                                        <p className="text-xs text-[#a1a1a1] leading-relaxed mb-2 sm:mb-2.5">
+                                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-3">
                                             Token-bucket rate limiter for our WebSocket proxy:
                                         </p>
 
                                         {/* Code Snippet Box with Syntax Colors */}
-                                        <div className="rounded-lg border border-[#222226] bg-[#0c0c0e] overflow-hidden">
-                                            <div className="px-3 py-1.5 bg-[#141416] border-b border-[#222226] flex items-center justify-between">
-                                                <span className="text-[10px] font-mono text-[#52a8ff] uppercase font-semibold">rust</span>
+                                        <div className="rounded-xl border border-[#222226] bg-[#0c0c0e] overflow-hidden shadow-lg">
+                                            <div className="px-4 py-2 bg-[#141416] border-b border-[#222226] flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-mono text-[#52a8ff] uppercase font-bold tracking-wider">rust</span>
+                                                    <span className="text-[10px] font-mono text-[#565656]">src/limiter.rs</span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5">
                                                     <button
                                                         onClick={triggerMockExplain}
-                                                        className="px-2 py-0.5 rounded text-[10px] font-mono bg-[#52a8ff]/10 text-[#52a8ff] hover:bg-[#52a8ff]/20 border border-[#52a8ff]/30 transition-all flex items-center gap-1"
+                                                        className="px-2.5 py-1 rounded-md text-[11px] font-mono font-medium bg-[#52a8ff]/10 text-[#52a8ff] hover:bg-[#52a8ff]/20 border border-[#52a8ff]/30 transition-all flex items-center gap-1.5 shadow-[0_0_12px_rgba(82,168,255,0.15)]"
                                                     >
                                                         <span>✨</span>
                                                         <span>{mockExplaining ? 'Streaming…' : mockExplanation ? 'Hide AI' : 'Explain with AI'}</span>
                                                     </button>
                                                     <button
                                                         onClick={handleCopyMockCode}
-                                                        className="text-[10px] font-mono text-[#71717a] hover:text-white transition-colors"
+                                                        className="text-[11px] font-mono text-[#71717a] hover:text-white transition-colors px-2 py-1 rounded hover:bg-[#1c1c1f]"
                                                     >
-                                                        {mockCopied ? 'Copied' : 'Copy'}
+                                                        {mockCopied ? '✓ Copied' : 'Copy'}
                                                     </button>
                                                 </div>
                                             </div>
-                                            <pre className="p-3 sm:p-3.5 font-mono text-[11px] sm:text-xs leading-relaxed whitespace-pre font-normal text-[#ededed] overflow-x-auto">
+                                            <pre className="p-4 sm:p-5 font-mono text-xs sm:text-sm leading-relaxed whitespace-pre font-normal text-[#ededed] overflow-x-auto">
                                                 <span className="text-[#f43f5e]">pub struct</span> <span className="text-[#38bdf8]">TokenBucket</span> &#123;{'\n'}
                                                 {'    '}<span className="text-[#e2e8f0]">capacity</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
                                                 {'    '}<span className="text-[#e2e8f0]">available</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
@@ -412,14 +453,17 @@ export default function Home() {
 
                                         {/* Streamed AI Explanation Card */}
                                         {mockExplanation !== null && (
-                                            <div className="mt-3 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed">
-                                                <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#222226] text-[10px] text-[#52a8ff] uppercase tracking-wider">
-                                                    <span>In-Line AI Explanation</span>
-                                                    <button onClick={() => setMockExplanation(null)} className="text-[#71717a] hover:text-white">✕</button>
+                                            <div className="mt-4 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed shadow-lg">
+                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#222226] text-[11px] text-[#52a8ff] uppercase tracking-wider font-semibold">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span>✨</span>
+                                                        <span>In-Line AI Explanation</span>
+                                                    </div>
+                                                    <button onClick={() => setMockExplanation(null)} className="text-[#71717a] hover:text-white px-1">✕</button>
                                                 </div>
-                                                <div className="whitespace-pre-wrap">
+                                                <div className="whitespace-pre-wrap leading-relaxed">
                                                     {mockExplanation}
-                                                    {mockExplaining && <span className="inline-block w-1.5 h-3.5 bg-[#52a8ff] ml-1 animate-pulse"></span>}
+                                                    {mockExplaining && <span className="inline-block w-2 h-4 bg-[#52a8ff] ml-1 animate-pulse"></span>}
                                                 </div>
                                             </div>
                                         )}
@@ -427,23 +471,24 @@ export default function Home() {
                                 </div>
 
                                 {/* Message 2 */}
-                                <div className="flex gap-2.5 sm:gap-3 items-start">
-                                    <div className="w-7 h-7 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#10b981] shrink-0 mt-0.5">
+                                <div className="flex gap-3 sm:gap-3.5 items-start">
+                                    <div className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#10b981] shrink-0 mt-0.5 shadow-sm">
                                         S
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 text-xs mb-0.5">
+                                        <div className="flex items-center gap-2 text-xs mb-1">
                                             <span className="font-semibold text-white">Sarah</span>
-                                            <span className="text-[10px] text-[#71717a]">10:43 AM</span>
+                                            <span className="text-[10px] text-[#71717a] font-mono">10:43 AM</span>
+                                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#18181b] text-[#10b981] font-mono">Benchmark</span>
                                         </div>
-                                        <p className="text-xs text-[#a1a1a1] leading-relaxed">
+                                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed">
                                             Tested with 50k concurrent sockets. Latency is under 40ms.
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Typing Indicator */}
-                                <div className="flex items-center gap-2 text-[11px] text-[#71717a] pl-9 sm:pl-10">
+                                <div className="flex items-center gap-2 text-xs text-[#71717a] pl-11">
                                     <span>Alex is typing</span>
                                     <span className="flex gap-1">
                                         <span className="typing-dot"></span>
@@ -454,16 +499,16 @@ export default function Home() {
                             </div>
 
                             {/* Mock Input Bar */}
-                            <div className="pt-3 border-t border-[#1f1f1f] flex items-center gap-2">
+                            <div className="pt-4 border-t border-[#1f1f1f] flex items-center gap-3">
                                 <input
                                     type="text"
                                     readOnly
                                     value="Message #general..."
-                                    className="flex-1 px-3 sm:px-3.5 py-2 rounded-lg bg-[#0e0e11] border border-[#222226] text-xs font-mono text-[#71717a] outline-none min-w-0"
+                                    className="flex-1 px-4 py-2.5 rounded-xl bg-[#0e0e11] border border-[#222226] text-xs font-mono text-[#71717a] outline-none min-w-0"
                                 />
                                 <button
                                     onClick={handleTryDemo}
-                                    className="px-3 sm:px-4 py-2 rounded-lg bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors shrink-0"
+                                    className="cta-primary px-5 py-2.5 rounded-xl text-xs font-semibold shrink-0"
                                 >
                                     <span className="sm:hidden">Launch →</span>
                                     <span className="hidden sm:inline">Launch Full App →</span>
@@ -474,130 +519,155 @@ export default function Home() {
                 </div>
 
                 {/* Link to Page 3 */}
-                <div className="mt-12 text-center">
+                <div className="mt-16 text-center">
                     <a
                         href="#features"
-                        className="inline-flex flex-col items-center gap-1.5 text-xs font-mono text-[#71717a] hover:text-[#52a8ff] transition-colors group"
+                        className="inline-flex flex-col items-center gap-2 text-xs font-mono text-[#71717a] hover:text-[#52a8ff] transition-colors group"
                     >
                         <span>Architecture &amp; Features</span>
-                        <span className="text-sm transition-transform group-hover:translate-y-0.5">↓</span>
+                        <span className="text-base animate-float">↓</span>
                     </a>
                 </div>
             </section>
 
-            {/* PAGE 3: Features & Zero-Fluff Specs Section (Full Viewport Centered) */}
-            <section id="features" className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 py-20 border-t border-[#1a1a1a] relative">
+            {/* PAGE 3: Features & Zero-Fluff Specs Section (Full Viewport Centered - 75% Width) */}
+            <section id="features" className="w-full min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-24 border-t border-[#18181b] relative">
                 {/* Section Header */}
-                <div className="text-center max-w-2xl mx-auto mb-10">
-                    <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-2">
+                <div className="text-center max-w-3xl mx-auto mb-14">
+                    <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-3">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff]"></span>
                         <span>ENGINEERED FOR TEAMS</span>
                     </div>
-                    <h2 className="text-2xl sm:text-4xl font-bold tracking-tight text-white mb-3">
+                    <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-4">
                         Everything developers need. Zero fluff.
                     </h2>
-                    <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed">
+                    <p className="text-sm sm:text-base text-[#a1a1aa] leading-relaxed max-w-xl mx-auto">
                         Built from the ground up for high concurrency, low latency, and developer security.
                     </p>
                 </div>
 
-                {/* Bento Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-4xl mx-auto mb-8">
-                    <div className="yc-card p-5 sm:p-6">
-                        <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs mb-3">
+                {/* Bento Grid (75% Viewport Width) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl xl:max-w-7xl mx-auto mb-10">
+                    <div className="yc-card p-7 sm:p-8 rounded-2xl">
+                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-base mb-4 shadow-[0_0_12px_rgba(82,168,255,0.15)]">
                             ⚡
                         </div>
-                        <h3 className="text-sm font-semibold text-white">Sub-50ms WebSockets</h3>
-                        <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                            Built on Socket.io with Redis pub/sub backplane. Features optimistic message sending and instant presence.
+                        <h3 className="text-base font-bold text-white mb-2">Sub-50ms WebSockets</h3>
+                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
+                            Built on Socket.io with Redis pub/sub backplane. Features optimistic message delivery and instant typing indicators across distributed server instances.
                         </p>
+                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Socket.io 4.x</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Redis Cluster</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">&lt;40ms Latency</span>
+                        </div>
                     </div>
 
-                    <div className="yc-card p-5 sm:p-6">
-                        <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#10b981] text-xs mb-3">
+                    <div className="yc-card p-7 sm:p-8 rounded-2xl">
+                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#10b981] text-base mb-4 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
                             ✨
                         </div>
-                        <h3 className="text-sm font-semibold text-white">In-Line Streamed AI</h3>
-                        <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                            Click &quot;Explain&quot; on any code snippet to receive token-by-token GPT-4o-mini breakdowns with per-message caching.
+                        <h3 className="text-base font-bold text-white mb-2">In-Line Streamed AI</h3>
+                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
+                            Click &quot;Explain&quot; on any code snippet to receive token-by-token GPT-4o-mini breakdowns directly in chat without context switching or leaving your flow.
                         </p>
+                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">GPT-4o-mini</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">SSE Streaming</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#52a8ff]">Snippet Cache</span>
+                        </div>
                     </div>
 
-                    <div className="yc-card p-5 sm:p-6">
-                        <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-xs mb-3">
+                    <div className="yc-card p-7 sm:p-8 rounded-2xl">
+                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-base mb-4 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
                             🖥️
                         </div>
-                        <h3 className="text-sm font-semibold text-white">VS Code-Grade Shiki</h3>
-                        <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                            Powered by Shiki syntax engine across 20+ languages including Rust, TypeScript, Python, and Go.
+                        <h3 className="text-base font-bold text-white mb-2">VS Code-Grade Shiki</h3>
+                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
+                            Powered by Shiki syntax engine across 20+ languages including Rust, TypeScript, Python, and Go with Monaco editor integration for fast code sharing.
                         </p>
+                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Shiki Engine</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Monaco Editor</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">20+ Themes</span>
+                        </div>
                     </div>
 
-                    <div className="yc-card p-5 sm:p-6">
-                        <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-xs mb-3">
+                    <div className="yc-card p-7 sm:p-8 rounded-2xl">
+                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-base mb-4 shadow-[0_0_12px_rgba(245,158,11,0.15)]">
                             🔒
                         </div>
-                        <h3 className="text-sm font-semibold text-white">AES-256 Key Security</h3>
-                        <p className="mt-1.5 text-xs text-[#a1a1a1] leading-relaxed">
-                            Bring your own OpenAI API key encrypted at rest with AES-256-GCM, plus an instant guest sandbox.
+                        <h3 className="text-base font-bold text-white mb-2">AES-256 Key Security</h3>
+                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
+                            Bring your own OpenAI API key encrypted at rest with AES-256-GCM, plus an instant guest sandbox that works out of the box with zero setup friction.
                         </p>
+                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">AES-256-GCM</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">BYO Key</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">Instant Guest</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Architecture Section */}
-                <div className="w-full max-w-4xl mx-auto rounded-xl border border-[#222226] bg-[#0c0c0e] p-5 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#222226]">
+                {/* Architecture Section (75% Viewport Width) */}
+                <div id="architecture" className="w-full max-w-6xl xl:max-w-7xl mx-auto rounded-2xl border border-[#222226] bg-[#0c0c0e] p-7 sm:p-8 mb-16 shadow-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#222226]">
                         <div>
-                            <div className="font-mono text-[10px] uppercase tracking-wider text-[#52a8ff]">
+                            <div className="font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-1">
                                 FULL-STACK SPECIFICATION
                             </div>
-                            <h3 className="text-sm font-semibold text-white mt-0.5">High-Concurrency Real-Time Infrastructure</h3>
+                            <h3 className="text-base sm:text-lg font-bold text-white">
+                                High-Concurrency Real-Time Infrastructure
+                            </h3>
                         </div>
                         <a
                             href="https://github.com/shihabcodes/DevChat"
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs font-mono text-[#52a8ff] hover:underline"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#2e2e2e] bg-[#141414] hover:bg-[#1f1f1f] text-xs font-mono text-[#52a8ff] transition-colors self-start sm:self-auto"
                         >
                             <span>Inspect Source Code</span>
                             <span>↗</span>
                         </a>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 font-mono text-xs">
-                        <div>
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider">Frontend</div>
-                            <div className="text-white font-medium mt-0.5">Next.js 15</div>
-                            <div className="text-[#71717a] text-[10px]">React 19, Shiki</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 font-mono text-xs">
+                        <div className="space-y-1">
+                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Frontend</div>
+                            <div className="text-white font-medium text-sm">Next.js 15</div>
+                            <div className="text-[#71717a] text-[11px]">React 19, Shiki</div>
                         </div>
-                        <div>
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider">WebSockets</div>
-                            <div className="text-white font-medium mt-0.5">Socket.io 4.x</div>
-                            <div className="text-[#71717a] text-[10px]">Redis Pub/Sub</div>
+                        <div className="space-y-1">
+                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">WebSockets</div>
+                            <div className="text-white font-medium text-sm">Socket.io 4.x</div>
+                            <div className="text-[#71717a] text-[11px]">Redis Pub/Sub</div>
                         </div>
-                        <div>
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider">AI Streaming</div>
-                            <div className="text-white font-medium mt-0.5">GPT-4o-mini</div>
-                            <div className="text-[#71717a] text-[10px]">SSE Streaming</div>
+                        <div className="space-y-1">
+                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">AI Streaming</div>
+                            <div className="text-white font-medium text-sm">GPT-4o-mini</div>
+                            <div className="text-[#71717a] text-[11px]">SSE Streaming</div>
                         </div>
-                        <div>
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider">Datastore</div>
-                            <div className="text-white font-medium mt-0.5">MongoDB 8.x</div>
-                            <div className="text-[#71717a] text-[10px]">AES-256 encryption</div>
+                        <div className="space-y-1">
+                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Datastore</div>
+                            <div className="text-white font-medium text-sm">MongoDB 8.x</div>
+                            <div className="text-[#71717a] text-[11px]">AES-256 encryption</div>
                         </div>
                     </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="w-full border-t border-[#1f1f1f] bg-black py-8">
-                <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[#565656]">
-                    <div className="flex items-center gap-2">
-                        <span className="text-[#ededed]">DevChat</span>
+            <footer className="w-full border-t border-[#1f1f1f] bg-black py-10">
+                <div className="max-w-7xl w-full mx-auto px-6 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs font-mono text-[#71717a]">
+                    <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-bold">
+                            &lt;/&gt;
+                        </span>
+                        <span className="text-[#ededed] font-medium">DevChat</span>
                         <span>·</span>
                         <span>shihabcodes/DevChat</span>
                     </div>
-                    <div className="flex items-center gap-5 text-[#a1a1a1]">
+                    <div className="flex items-center gap-6 text-[#a1a1a1]">
                         <a href="https://github.com/shihabcodes/DevChat" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
                         <a href="https://shihabcodes.github.io" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Shihab Portfolio</a>
                         <a href="https://cal.com/shihabcodes/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Book Intro</a>
