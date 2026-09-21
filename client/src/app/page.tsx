@@ -252,9 +252,9 @@ export default function Home() {
             </header>
 
             {/* PAGE 1: Hero Section (Full Viewport Centered) */}
-            <section className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center text-center px-4 sm:px-6 py-20 relative">
+            <section className="w-full min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-12 pb-32 relative">
                 {/* Sparky Status Pill */}
-                <div className="spark-badge inline-flex items-center gap-2.5 h-8 px-4 rounded-full text-xs font-mono text-white mb-8 cursor-default">
+                <div className="spark-badge inline-flex items-center gap-2.5 h-8 px-4 rounded-full text-xs font-mono text-white mb-8 sm:mb-10 cursor-default">
                     <span className="text-xs">✨</span>
                     <span className="font-semibold tracking-wide text-white">DEVCHAT 2.0</span>
                     <span className="text-[#71717a]">·</span>
@@ -265,7 +265,7 @@ export default function Home() {
                 </div>
 
                 {/* Hero Title */}
-                <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[5.5rem] font-extrabold tracking-tight text-white leading-[1.08] max-w-5xl mb-8 px-2">
+                <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[5.5rem] font-extrabold tracking-tight text-white leading-[1.08] max-w-5xl mb-6 sm:mb-8 px-2">
                     Real-time chat built for{' '}
                     <span className="bg-gradient-to-r from-white via-[#f4f4f5] to-[#52a8ff] bg-clip-text text-transparent">
                         developer flow.
@@ -273,36 +273,39 @@ export default function Home() {
                 </h1>
 
                 {/* Hero Subtitle */}
-                <p className="text-base sm:text-xl text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto mb-12 font-normal px-2">
+                <p className="text-base sm:text-xl text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto mb-10 sm:mb-14 font-normal px-2">
                     Share syntax-highlighted code, stream in-line AI explanations, and collaborate in sub-50ms channels.
                 </p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto px-4 mb-20">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 w-full sm:w-auto px-4">
                     <button
                         onClick={handleTryDemo}
                         disabled={demoLoading}
-                        className="cta-primary w-full sm:w-auto h-13 px-9 rounded-full text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
+                        className="cta-primary group w-full sm:w-auto h-12 sm:h-13 px-9 rounded-full text-sm font-semibold flex items-center justify-center gap-2.5 disabled:opacity-60"
                     >
                         <span>{demoLoading ? 'Launching…' : 'Try Live Demo'}</span>
-                        <span className="text-xs font-bold">→</span>
+                        <span className="text-xs font-bold transition-transform duration-200 group-hover:translate-x-1">→</span>
                     </button>
                     <button
                         onClick={() => { setMode('register'); setAuthModalOpen(true); }}
-                        className="cta-secondary w-full sm:w-auto h-13 px-9 rounded-full text-sm font-medium flex items-center justify-center"
+                        className="cta-secondary w-full sm:w-auto h-12 sm:h-13 px-9 rounded-full text-sm font-medium flex items-center justify-center"
                     >
                         Create Account
                     </button>
                 </div>
 
-                {/* Scroll Down Indicator */}
-                <a
-                    href="#preview"
-                    className="inline-flex flex-col items-center gap-2 text-xs font-mono text-[#71717a] hover:text-[#52a8ff] transition-colors group"
-                >
-                    <span>Interactive IDE Preview</span>
-                    <span className="text-base animate-float">↓</span>
-                </a>
+                {/* Scroll Down Indicator - Anchored at the bottom of the hero viewport */}
+                <div className="absolute bottom-8 sm:bottom-10 left-1/2 -translate-x-1/2">
+                    <a
+                        href="#preview"
+                        className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#27272a] bg-[#0c0c0e]/90 hover:bg-[#18181b] hover:border-[#52a8ff]/50 text-[#a1a1aa] hover:text-white text-xs font-mono backdrop-blur-md transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.5)] group"
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff] group-hover:scale-125 transition-transform" />
+                        <span>Interactive IDE Preview</span>
+                        <span className="text-xs transition-transform duration-200 group-hover:translate-y-0.5 text-[#52a8ff]">↓</span>
+                    </a>
+                </div>
             </section>
 
             {/* PAGE 2: Interactive IDE Preview Section (Full Viewport Centered - 75% Width) */}
@@ -527,10 +530,11 @@ export default function Home() {
                 <div className="mt-16 text-center">
                     <a
                         href="#features"
-                        className="inline-flex flex-col items-center gap-2 text-xs font-mono text-[#71717a] hover:text-[#52a8ff] transition-colors group"
+                        className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[#27272a] bg-[#0c0c0e]/90 hover:bg-[#18181b] hover:border-[#52a8ff]/50 text-[#a1a1aa] hover:text-white text-xs font-mono backdrop-blur-md transition-all duration-200 shadow-[0_4px_20px_rgba(0,0,0,0.5)] group"
                     >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff] group-hover:scale-125 transition-transform" />
                         <span>Architecture &amp; Features</span>
-                        <span className="text-base animate-float">↓</span>
+                        <span className="text-xs transition-transform duration-200 group-hover:translate-y-0.5 text-[#52a8ff]">↓</span>
                     </a>
                 </div>
             </section>

@@ -243,18 +243,19 @@ html, body {
 .cta-primary {
   background: #ffffff;
   color: #000000;
-  box-shadow: 0 0 28px rgba(255, 255, 255, 0.18), 0 4px 14px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.15), 0 4px 12px rgba(0, 0, 0, 0.5);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
 }
 
 .cta-primary:hover {
-  background: #f4f4f5;
-  transform: translateY(-2px);
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.6);
+  background: #ffffff;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 40px rgba(82, 168, 255, 0.4), 0 0 20px rgba(255, 255, 255, 0.6), 0 8px 24px rgba(0, 0, 0, 0.7);
 }
 
 .cta-primary:active {
-  transform: translateY(0);
+  transform: translateY(-1px) scale(1);
 }
 
 .cta-secondary {
@@ -263,18 +264,19 @@ html, body {
   color: #ededed;
   backdrop-filter: blur(12px);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
 }
 
 .cta-secondary:hover {
   background: rgba(28, 28, 34, 0.95);
-  border-color: rgba(82, 168, 255, 0.4);
+  border-color: rgba(82, 168, 255, 0.6);
   color: #ffffff;
-  transform: translateY(-2px);
-  box-shadow: 0 0 24px rgba(82, 168, 255, 0.15);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 30px rgba(82, 168, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .cta-secondary:active {
-  transform: translateY(0);
+  transform: translateY(-1px) scale(1);
 }
 
 @keyframes floatScroll {
