@@ -188,7 +188,7 @@ export default function Home() {
 
             {/* Navigation Bar */}
             <header className="sticky top-0 z-40 w-full border-b border-[#1f1f1f] bg-black/80 backdrop-blur-md">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
                     <a href="#" className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-mono font-bold">
                             &lt;/&gt;
@@ -203,7 +203,7 @@ export default function Home() {
                             href="https://github.com/shihabcodes/DevChat"
                             target="_blank"
                             rel="noreferrer"
-                            className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] text-[#a1a1a1] hover:text-white text-xs font-mono transition-colors"
+                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#2e2e2e] bg-[#0e0e0e] text-[#a1a1a1] hover:text-white text-xs font-mono transition-colors"
                         >
                             <span>★ Star on GitHub</span>
                         </a>
@@ -228,9 +228,9 @@ export default function Home() {
             </header>
 
             {/* Hero Section */}
-            <main className="flex-1 flex flex-col items-center pt-16 pb-20 px-4 sm:px-6 text-center max-w-4xl mx-auto w-full">
+            <main className="flex-1 flex flex-col items-center pt-16 pb-20 px-4 sm:px-6 text-center max-w-5xl mx-auto w-full">
                 {/* Status Pill */}
-                <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full border border-[#2e2e2e] bg-white/[0.02] text-xs font-mono text-[#a1a1a1] mb-6">
+                <div className="inline-flex items-center gap-2 h-7 px-3.5 rounded-full border border-[#27272a] bg-white/[0.03] text-xs font-mono text-[#a1a1a1] mb-6">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981] animate-pulse"></span>
                     <span className="text-white font-medium">DEVCHAT 2.0</span>
                     <span className="text-[#565656]">·</span>
@@ -238,12 +238,12 @@ export default function Home() {
                 </div>
 
                 {/* Hero Title */}
-                <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white leading-[1.08] max-w-2xl mb-5">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-[1.1] max-w-3xl mb-4">
                     Real-time chat built for developer flow.
                 </h1>
 
                 {/* Hero Subtitle */}
-                <p className="text-base sm:text-lg text-[#a1a1a1] leading-relaxed max-w-lg mx-auto mb-8 font-normal">
+                <p className="text-sm sm:text-base text-[#a1a1a1] leading-relaxed max-w-xl mx-auto mb-8 font-normal">
                     Share syntax-highlighted code, stream in-line AI explanations, and collaborate in sub-50ms channels.
                 </p>
 
@@ -259,22 +259,22 @@ export default function Home() {
                     </button>
                     <button
                         onClick={() => { setMode('register'); setAuthModalOpen(true); }}
-                        className="h-11 px-6 rounded-full border border-[#2e2e2e] bg-[#111113] text-[#ededed] text-sm font-medium hover:border-[#3a3a3a] hover:bg-[#18181b] transition-all"
+                        className="h-11 px-7 rounded-full border border-[#27272a] bg-[#121214] text-[#ededed] text-sm font-medium hover:border-[#3f3f46] hover:bg-[#18181b] transition-all"
                     >
                         Create Account
                     </button>
                 </div>
 
                 {/* Interactive Product Preview Widget */}
-                <section id="preview" className="w-full max-w-3xl text-left">
-                    <div className="rounded-xl border border-[#1f1f1f] bg-[#09090b] shadow-2xl overflow-hidden">
+                <section id="preview" className="w-full max-w-4xl text-left">
+                    <div className="rounded-xl border border-[#27272a] bg-[#0c0c0e] shadow-[0_20px_60px_rgba(0,0,0,0.8)] overflow-hidden">
                         {/* Top Window Bar */}
-                        <div className="px-4 py-3 bg-[#0d0d0f] border-b border-[#1f1f1f] flex items-center justify-between">
+                        <div className="px-4 py-3 bg-[#111114] border-b border-[#222226] flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#262626]"></span>
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#262626]"></span>
-                                <span className="w-2.5 h-2.5 rounded-full bg-[#262626]"></span>
-                                <span className="text-xs font-mono text-[#71717a] ml-2">devchat / #general</span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#2a2a2e]"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#2a2a2e]"></span>
+                                <span className="w-2.5 h-2.5 rounded-full bg-[#2a2a2e]"></span>
+                                <span className="text-xs font-mono text-[#8e8e93] ml-2">devchat / #general</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
@@ -285,9 +285,9 @@ export default function Home() {
                         {/* Workspace Body */}
                         <div className="flex flex-col md:flex-row">
                             {/* Left Sidebar */}
-                            <div className="w-full md:w-48 border-b md:border-b-0 md:border-r border-[#1f1f1f] bg-[#080809] p-3 space-y-4 shrink-0">
+                            <div className="w-full md:w-52 border-b md:border-b-0 md:border-r border-[#222226] bg-[#09090b] p-3.5 space-y-4 shrink-0">
                                 <div>
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#565656] px-2 mb-1.5">
+                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2 font-semibold">
                                         Channels
                                     </div>
                                     <div className="space-y-0.5">
@@ -299,10 +299,10 @@ export default function Home() {
                                             <button
                                                 key={ch.id}
                                                 onClick={() => setActiveMockChannel(ch.id)}
-                                                className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-mono transition-all text-left ${
+                                                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-mono transition-all text-left ${
                                                     activeMockChannel === ch.id
-                                                        ? 'bg-[#141414] text-white border border-[#2e2e2e]'
-                                                        : 'text-[#71717a] hover:text-white'
+                                                        ? 'bg-[#18181b] text-white border border-[#2e2e32] font-medium'
+                                                        : 'text-[#71717a] hover:text-[#ededed]'
                                                 }`}
                                             >
                                                 <span className="text-[#52a8ff]">#</span>
@@ -313,10 +313,10 @@ export default function Home() {
                                 </div>
 
                                 <div>
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#565656] px-2 mb-1.5">
+                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2 font-semibold">
                                         Members (3)
                                     </div>
-                                    <div className="space-y-1 text-xs">
+                                    <div className="space-y-1.5 text-xs">
                                         <div className="flex items-center gap-2 px-2 py-0.5 text-[#ededed]">
                                             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
                                             <span>Alex</span>
@@ -332,32 +332,32 @@ export default function Home() {
                                     </div>
                                 </div>
 
-                                <div className="pt-2 border-t border-[#1f1f1f] text-[10px] font-mono text-[#52a8ff] flex items-center gap-1.5 px-1">
+                                <div className="pt-2.5 border-t border-[#1f1f1f] text-[11px] font-mono text-[#52a8ff] flex items-center gap-1.5 px-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff]"></span>
                                     <span>GPT-4o-mini Active</span>
                                 </div>
                             </div>
 
                             {/* Right Chat Feed */}
-                            <div className="flex-1 bg-black p-4 sm:p-5 flex flex-col justify-between gap-4">
-                                <div className="space-y-3.5">
+                            <div className="flex-1 bg-[#020202] p-5 flex flex-col justify-between gap-5">
+                                <div className="space-y-4">
                                     {/* Message 1 */}
-                                    <div className="flex gap-2.5 items-start">
+                                    <div className="flex gap-3 items-start">
                                         <div className="w-7 h-7 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#52a8ff] shrink-0 mt-0.5">
                                             A
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 text-xs mb-1">
                                                 <span className="font-semibold text-white">Alex</span>
-                                                <span className="text-[10px] text-[#565656]">10:42 AM</span>
+                                                <span className="text-[10px] text-[#71717a]">10:42 AM</span>
                                             </div>
-                                            <p className="text-xs text-[#a1a1a1] leading-relaxed mb-2">
+                                            <p className="text-xs text-[#a1a1a1] leading-relaxed mb-2.5">
                                                 Token-bucket rate limiter for our WebSocket proxy:
                                             </p>
 
-                                            {/* Code Snippet Box */}
-                                            <div className="rounded-lg border border-[#1f1f1f] bg-[#0c0c0e] overflow-hidden">
-                                                <div className="px-3 py-1.5 bg-[#121214] border-b border-[#1f1f1f] flex items-center justify-between">
+                                            {/* Code Snippet Box with Syntax Colors */}
+                                            <div className="rounded-lg border border-[#222226] bg-[#0c0c0e] overflow-hidden">
+                                                <div className="px-3 py-1.5 bg-[#141416] border-b border-[#222226] flex items-center justify-between">
                                                     <span className="text-[10px] font-mono text-[#52a8ff] uppercase font-semibold">rust</span>
                                                     <div className="flex items-center gap-2">
                                                         <button
@@ -375,20 +375,20 @@ export default function Home() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <pre className="p-3 font-mono text-xs text-[#e4e4e7] overflow-x-auto leading-relaxed whitespace-pre font-normal">
-{`pub struct TokenBucket {
-    capacity: usize,
-    available: usize,
-    refill_rate: Duration,
-    last_refill: Instant,
-}`}
+                                                <pre className="p-3.5 font-mono text-xs leading-relaxed whitespace-pre font-normal text-[#ededed]">
+                                                    <span className="text-[#f43f5e]">pub struct</span> <span className="text-[#38bdf8]">TokenBucket</span> &#123;{'\n'}
+                                                    {'    '}<span className="text-[#e2e8f0]">capacity</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
+                                                    {'    '}<span className="text-[#e2e8f0]">available</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
+                                                    {'    '}<span className="text-[#e2e8f0]">refill_rate</span>: <span className="text-[#38bdf8]">Duration</span>,{'\n'}
+                                                    {'    '}<span className="text-[#e2e8f0]">last_refill</span>: <span className="text-[#38bdf8]">Instant</span>,{'\n'}
+                                                    &#125;
                                                 </pre>
                                             </div>
 
                                             {/* Streamed AI Explanation Card */}
                                             {mockExplanation !== null && (
-                                                <div className="mt-2.5 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed">
-                                                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#1f1f1f] text-[10px] text-[#52a8ff] uppercase tracking-wider">
+                                                <div className="mt-3 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed">
+                                                    <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#222226] text-[10px] text-[#52a8ff] uppercase tracking-wider">
                                                         <span>In-Line AI Explanation</span>
                                                         <button onClick={() => setMockExplanation(null)} className="text-[#71717a] hover:text-white">✕</button>
                                                     </div>
@@ -402,14 +402,14 @@ export default function Home() {
                                     </div>
 
                                     {/* Message 2 */}
-                                    <div className="flex gap-2.5 items-start">
+                                    <div className="flex gap-3 items-start">
                                         <div className="w-7 h-7 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#10b981] shrink-0 mt-0.5">
                                             S
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 text-xs mb-0.5">
                                                 <span className="font-semibold text-white">Sarah</span>
-                                                <span className="text-[10px] text-[#565656]">10:43 AM</span>
+                                                <span className="text-[10px] text-[#71717a]">10:43 AM</span>
                                             </div>
                                             <p className="text-xs text-[#a1a1a1] leading-relaxed">
                                                 Tested with 50k concurrent sockets. Latency is under 40ms.
@@ -418,7 +418,7 @@ export default function Home() {
                                     </div>
 
                                     {/* Typing Indicator */}
-                                    <div className="flex items-center gap-2 text-[11px] text-[#71717a] pl-9">
+                                    <div className="flex items-center gap-2 text-[11px] text-[#71717a] pl-10">
                                         <span>Alex is typing</span>
                                         <span className="flex gap-1">
                                             <span className="typing-dot"></span>
@@ -434,11 +434,11 @@ export default function Home() {
                                         type="text"
                                         readOnly
                                         value="Message #general..."
-                                        className="flex-1 px-3 py-2 rounded-lg bg-[#0e0e10] border border-[#1f1f1f] text-xs font-mono text-[#71717a] outline-none"
+                                        className="flex-1 px-3.5 py-2 rounded-lg bg-[#0e0e11] border border-[#222226] text-xs font-mono text-[#71717a] outline-none"
                                     />
                                     <button
                                         onClick={handleTryDemo}
-                                        className="px-3.5 py-2 rounded-lg bg-white text-black text-xs font-semibold hover:bg-[#e4e4e7] transition-colors shrink-0"
+                                        className="px-4 py-2 rounded-lg bg-white text-black text-xs font-semibold hover:bg-neutral-200 transition-colors shrink-0"
                                     >
                                         Launch Full App →
                                     </button>
@@ -449,7 +449,7 @@ export default function Home() {
                 </section>
 
                 {/* Features Section */}
-                <section id="features" className="mt-20 w-full max-w-3xl text-left">
+                <section id="features" className="mt-24 w-full max-w-4xl text-left">
                     <div className="mb-6">
                         <div className="font-mono text-[10px] uppercase tracking-wider text-[#52a8ff] mb-1">
                             ENGINEERED FOR TEAMS
@@ -459,8 +459,8 @@ export default function Home() {
                         </h2>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div className="yc-card p-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="yc-card p-5 sm:p-6">
                             <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs mb-3">
                                 ⚡
                             </div>
@@ -470,7 +470,7 @@ export default function Home() {
                             </p>
                         </div>
 
-                        <div className="yc-card p-5">
+                        <div className="yc-card p-5 sm:p-6">
                             <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#10b981] text-xs mb-3">
                                 ✨
                             </div>
@@ -480,7 +480,7 @@ export default function Home() {
                             </p>
                         </div>
 
-                        <div className="yc-card p-5">
+                        <div className="yc-card p-5 sm:p-6">
                             <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-xs mb-3">
                                 🖥️
                             </div>
@@ -490,7 +490,7 @@ export default function Home() {
                             </p>
                         </div>
 
-                        <div className="yc-card p-5">
+                        <div className="yc-card p-5 sm:p-6">
                             <div className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-xs mb-3">
                                 🔒
                             </div>
@@ -503,9 +503,9 @@ export default function Home() {
                 </section>
 
                 {/* Architecture Section */}
-                <section id="architecture" className="mt-16 w-full max-w-3xl text-left">
-                    <div className="rounded-xl border border-[#1f1f1f] bg-[#0a0a0a] p-5 sm:p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#1f1f1f]">
+                <section id="architecture" className="mt-16 w-full max-w-4xl text-left">
+                    <div className="rounded-xl border border-[#222226] bg-[#0c0c0e] p-5 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#222226]">
                             <div>
                                 <div className="font-mono text-[10px] uppercase tracking-wider text-[#52a8ff]">
                                     FULL-STACK SPECIFICATION
