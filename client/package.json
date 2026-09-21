@@ -29,5 +29,9 @@
         "eslint-config-next": "^15.1.0",
         "tailwindcss": "^4.0.0",
         "typescript": "^5.6.0"
+    },
+    "overrides": {
+        "dompurify": "^3.4.15",
+        "postcss": "^8.5.28"
     }
 }
