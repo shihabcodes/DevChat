@@ -1,19 +1,15 @@
+const crypto = require('crypto');
 const env = require('../config/env');
 const logger = require('../config/logger');
-
-// Attach a short request id and log the request + response. Pairs with
-// the client-side `x-request-id` header to correlate logs with a
-// specific user action. Also captures Cloudflare ray id and client IP.
 
 const HEADER = 'x-request-id';
 
 function requestContext(req, res, next) {
-    const id = req.header(HEADER) || require('crypto').randomBytes(8).toString('hex');
+    const id = req.header(HEADER) || crypto.randomBytes(8).toString('hex');
     req.id = id;
     res.setHeader(HEADER, id);
     const start = Date.now();
     res.on('finish', () => {
-        const ms = Date.now() - start;
         const cfRay = req.header('cf-ray');
         const clientIp = req.header('cf-connecting-ip') || req.header('x-forwarded-for')?.split(',')[0].trim() || req.ip;
         const meta = {
@@ -21,9 +17,9 @@ function requestContext(req, res, next) {
             method: req.method,
             path: req.originalUrl,
             status: res.statusCode,
-            ms,
+            ms: Date.now() - start,
             ip: clientIp,
-            ...(cfRay ? { cfRay } : {}),
+            ...(cfRay && { cfRay }),
         };
         if (res.statusCode >= 500) {
             logger.error('request', meta);

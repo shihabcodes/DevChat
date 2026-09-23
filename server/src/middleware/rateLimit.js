@@ -1,20 +1,16 @@
 const rateLimit = require('express-rate-limit');
 
-// Helper to resolve client IP accurately behind Cloudflare or reverse proxies.
-function getClientIp(req) {
-    const cfIp = req.headers['cf-connecting-ip'];
-    if (cfIp) return cfIp;
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
-    return req.ip;
-}
+const getClientIp = (req) =>
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+    req.ip;
 
 const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => getClientIp(req),
+    keyGenerator: getClientIp,
     message: { error: 'Too many requests, please slow down.' },
 });
 
@@ -23,7 +19,7 @@ const authLimiter = rateLimit({
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => getClientIp(req),
+    keyGenerator: getClientIp,
     skipSuccessfulRequests: true,
     message: { error: 'Too many attempts. Try again in a few minutes.' },
 });

@@ -105,7 +105,6 @@ async function main() {
     r = await req('GET', `/api/messages/channel/${aliceCh}`, null, bob.body.token);
     check('IDOR: bob→alice channel = 403', r.status === 403);
 
-    // 12. OpenAI key save/get/delete
     const dummyKey = ['sk', 'test1234567890abcdef1234567890abcdef'].join('-');
     r = await req('POST', '/api/keys', { apiKey: dummyKey }, demo.body.token);
     check('save OpenAI key', r.status === 201);
