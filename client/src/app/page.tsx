@@ -272,9 +272,9 @@ export default function Home() {
             </header>
 
             {/* HERO SECTION (Interfere 2-Column Editorial Layout) */}
-            <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-12 sm:pt-20 pb-16 relative">
+            <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-16 sm:pt-24 pb-28 sm:pb-36 relative">
                 {/* Top Row: Headline on Left, Subtitle & CTAs on Right */}
-                <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-12 mb-12 sm:mb-16">
+                <div className="flex flex-col lg:flex-row items-start justify-between gap-8 lg:gap-14 mb-14 sm:mb-20">
                     {/* Left Column: Editorial Headline */}
                     <div className="flex-1 max-w-2xl">
                         {/* Status Pill */}
@@ -285,17 +285,18 @@ export default function Home() {
                             <span className="text-[#a1a1aa]">IN-LINE AI MESSENGER</span>
                         </div>
 
-                        {/* Editorial Typography: Modern Sans + Italic Serif */}
-                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-white leading-[1.08]">
-                            Ship developer conversations that never{' '}
+                        {/* Editorial Typography: Modern Sans + Italic Serif (2 Clean Lines) */}
+                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-white leading-[1.06]">
+                            Developer chat that<br className="hidden sm:block" />
+                            never{' '}
                             <span className="font-editorial italic font-normal text-white text-[1.14em]">
-                                lose flow.
+                                loses flow.
                             </span>
                         </h1>
                     </div>
 
-                    {/* Right Column: Narrative Subtitle & Dual Action Buttons */}
-                    <div className="flex flex-col items-start lg:items-end justify-between gap-6 max-w-lg lg:text-right pt-2 lg:pt-10">
+                    {/* Right Column: Narrative Subtitle & Dual Action Buttons (Left-Aligned within Column) */}
+                    <div className="flex flex-col items-start justify-between gap-6 max-w-md pt-2 lg:pt-8">
                         <p className="text-base sm:text-lg text-[#a1a1aa] leading-relaxed font-normal">
                             DevChat empowers engineers with in-line AI intelligence, sub-50ms channels, and syntax-highlighted code execution without leaving the flow.
                         </p>
@@ -330,18 +331,18 @@ export default function Home() {
                     {/* Floating Product Container */}
                     <div className="relative w-full rounded-2xl interfere-window bg-[#09090b]/95 backdrop-blur-2xl border border-white/[0.09] overflow-hidden">
                         {/* Top Window Bar with Traffic Lights & Interfere Tabs */}
-                        <div className="px-5 py-3.5 bg-[#111114] border-b border-white/[0.08] flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <span className="w-3 h-3 rounded-full bg-[#ff5f56]/90 shadow-[0_0_6px_#ff5f56]/40"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#ffbd2e]/90 shadow-[0_0_6px_#ffbd2e]/40"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#27c93f]/90 shadow-[0_0_6px_#27c93f]/40"></span>
-                                <span className="text-xs font-mono text-[#8e8e93] ml-3 hidden sm:inline">
-                                    devchat / workspace / #general / limiter.rs
+                        <div className="px-5 py-3.5 bg-[#111114] border-b border-white/[0.08] flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="w-3 h-3 rounded-full bg-[#ff5f56]/90 shadow-[0_0_6px_#ff5f56]/40 shrink-0"></span>
+                                <span className="w-3 h-3 rounded-full bg-[#ffbd2e]/90 shadow-[0_0_6px_#ffbd2e]/40 shrink-0"></span>
+                                <span className="w-3 h-3 rounded-full bg-[#27c93f]/90 shadow-[0_0_6px_#27c93f]/40 shrink-0"></span>
+                                <span className="text-xs font-mono text-[#8e8e93] ml-2 truncate hidden md:inline">
+                                    devchat : #general / limiter.rs
                                 </span>
                             </div>
 
                             {/* Center Tabs matching Interfere (Activity, Sessions, Findings) */}
-                            <div className="flex items-center gap-1 bg-[#18181b] p-1 rounded-lg border border-white/[0.06] text-xs font-mono">
+                            <div className="flex items-center gap-1 bg-[#18181b] p-1 rounded-lg border border-white/[0.08] text-xs font-mono shrink-0">
                                 <button
                                     onClick={() => setActiveMockTab('chat')}
                                     className={`px-3 py-1 rounded-md transition-all ${
@@ -367,7 +368,7 @@ export default function Home() {
                                 </button>
                                 <button
                                     onClick={() => setActiveMockTab('findings')}
-                                    className={`px-3 py-1 rounded-md transition-all hidden md:block ${
+                                    className={`px-3 py-1 rounded-md transition-all hidden sm:block ${
                                         activeMockTab === 'findings'
                                             ? 'bg-[#27272a] text-white font-medium shadow-sm'
                                             : 'text-[#71717a] hover:text-[#d4d4d8]'
@@ -377,10 +378,10 @@ export default function Home() {
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/20">
+                            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/25 shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
                                 <span className="text-[11px] font-mono text-[#10b981] font-medium hidden sm:inline">
-                                    Sub-50ms WebSocket · Redis
+                                    Sub-50ms
                                 </span>
                             </div>
                         </div>
@@ -533,14 +534,24 @@ export default function Home() {
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <pre className="p-4 sm:p-5 font-mono text-xs sm:text-sm leading-relaxed whitespace-pre font-normal text-[#ededed] overflow-x-auto">
-                                                    <span className="text-[#f43f5e]">pub struct</span> <span className="text-[#38bdf8]">TokenBucket</span> &#123;{'\n'}
-                                                    {'    '}<span className="text-[#e2e8f0]">capacity</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
-                                                    {'    '}<span className="text-[#e2e8f0]">available</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
-                                                    {'    '}<span className="text-[#e2e8f0]">refill_rate</span>: <span className="text-[#38bdf8]">Duration</span>,{'\n'}
-                                                    {'    '}<span className="text-[#e2e8f0]">last_refill</span>: <span className="text-[#38bdf8]">Instant</span>,{'\n'}
-                                                    &#125;
-                                                </pre>
+                                                <div className="p-4 sm:p-5 font-mono text-xs sm:text-sm leading-relaxed overflow-x-auto flex gap-4 text-[#ededed]">
+                                                    <div className="text-[#52525b] select-none text-right font-normal space-y-0.5 shrink-0">
+                                                        <div>1</div>
+                                                        <div>2</div>
+                                                        <div>3</div>
+                                                        <div>4</div>
+                                                        <div>5</div>
+                                                        <div>6</div>
+                                                    </div>
+                                                    <pre className="whitespace-pre font-normal flex-1">
+                                                        <span className="text-[#f43f5e]">pub struct</span> <span className="text-[#38bdf8]">TokenBucket</span> &#123;{'\n'}
+                                                        {'    '}<span className="text-[#e2e8f0]">capacity</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
+                                                        {'    '}<span className="text-[#e2e8f0]">available</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
+                                                        {'    '}<span className="text-[#e2e8f0]">refill_rate</span>: <span className="text-[#38bdf8]">Duration</span>,{'\n'}
+                                                        {'    '}<span className="text-[#e2e8f0]">last_refill</span>: <span className="text-[#38bdf8]">Instant</span>,{'\n'}
+                                                        &#125;
+                                                    </pre>
+                                                </div>
                                             </div>
 
                                             {/* Streamed AI Explanation Card */}
@@ -612,32 +623,32 @@ export default function Home() {
                 </div>
 
                 {/* Feature Micro-Highlights Strip below Product Mockup */}
-                <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-12 text-xs font-mono text-[#a1a1aa] px-4">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/[0.08] bg-[#0c0c0e]/80 shadow-sm">
-                        <span className="text-[#52a8ff]">⚡</span>
+                <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-16 mb-8 text-xs font-mono text-[#a1a1aa] px-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.14] bg-[#111114]/90 backdrop-blur-md shadow-md hover:border-white/[0.25] transition-colors">
+                        <span className="text-[#52a8ff] text-sm">⚡</span>
                         <span className="text-white font-medium">Sub-50ms</span>
-                        <span className="text-[#71717a]">WebSockets</span>
+                        <span className="text-[#a1a1aa]">WebSockets</span>
                     </div>
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/[0.08] bg-[#0c0c0e]/80 shadow-sm">
-                        <span className="text-[#10b981]">✨</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.14] bg-[#111114]/90 backdrop-blur-md shadow-md hover:border-white/[0.25] transition-colors">
+                        <span className="text-[#10b981] text-sm">✨</span>
                         <span className="text-white font-medium">In-Line</span>
-                        <span className="text-[#71717a]">AI Explanations</span>
+                        <span className="text-[#a1a1aa]">AI Explanations</span>
                     </div>
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/[0.08] bg-[#0c0c0e]/80 shadow-sm">
-                        <span className="text-[#38bdf8]">🎨</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.14] bg-[#111114]/90 backdrop-blur-md shadow-md hover:border-white/[0.25] transition-colors">
+                        <span className="text-[#38bdf8] text-sm">🎨</span>
                         <span className="text-white font-medium">VS Code</span>
-                        <span className="text-[#71717a]">Shiki Engine</span>
+                        <span className="text-[#a1a1aa]">Shiki Engine</span>
                     </div>
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/[0.08] bg-[#0c0c0e]/80 shadow-sm">
-                        <span className="text-[#f59e0b]">🔒</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.14] bg-[#111114]/90 backdrop-blur-md shadow-md hover:border-white/[0.25] transition-colors">
+                        <span className="text-[#f59e0b] text-sm">🔒</span>
                         <span className="text-white font-medium">AES-256</span>
-                        <span className="text-[#71717a]">Encrypted</span>
+                        <span className="text-[#a1a1aa]">Encrypted</span>
                     </div>
                 </div>
             </section>
 
             {/* FEATURES SECTION (Interfere Minimalist Bento Grid) */}
-            <section id="features" className="w-full max-w-7xl mx-auto px-4 sm:px-8 py-24 border-t border-white/[0.08] relative">
+            <section id="features" className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-32 pb-32 border-t border-white/[0.08] relative">
                 {/* Section Header */}
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-3">
