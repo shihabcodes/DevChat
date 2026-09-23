@@ -50,14 +50,15 @@ export default function AISettings({ open, onClose, onChange }: AISettingsProps)
     if (!open) return null;
 
     const handleSave = async () => {
-        if (!draft.startsWith('sk-')) {
+        const trimmed = draft.trim();
+        if (!trimmed.startsWith('sk-')) {
             setError('OpenAI keys start with "sk-"');
             return;
         }
         setError(null);
         setSaving(true);
         try {
-            await api.setKey(draft);
+            await api.setKey(trimmed);
             const info = await api.getKey();
             setKeyInfo(info);
             setDraft('');

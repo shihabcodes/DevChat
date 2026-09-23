@@ -1,5 +1,8 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import CodeBlock from './CodeBlock';
 import { Message } from '@/types';
 
@@ -31,7 +34,6 @@ export default function MessageBubble({
                 isFailed ? 'opacity-70' : ''
             } ${isPending ? 'opacity-60' : ''}`}
         >
-            {/* Avatar */}
             <div className="shrink-0 mt-0.5">
                 {message.user?.avatar ? (
                     <img
@@ -47,7 +49,6 @@ export default function MessageBubble({
                 )}
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                     <span className={`text-xs font-medium ${isOwn ? 'text-[#52a8ff]' : 'text-white'}`}>
@@ -57,7 +58,7 @@ export default function MessageBubble({
                         {time}
                     </span>
                     {isPending && (
-                        <span className="text-[10px] text-[#71717a] font-mono animate-pulse">sending…</span>
+                        <span className="text-[10px] text-[#71717a] font-mono animate-pulse">sending...</span>
                     )}
                     {isFailed && (
                         <div className="flex items-center gap-1.5">
@@ -84,8 +85,18 @@ export default function MessageBubble({
                         isDemo={isDemo}
                     />
                 ) : (
-                    <div className="text-xs text-[#d4d4d8] leading-relaxed break-words whitespace-pre-wrap">
-                        {message.content}
+                    <div className="text-xs text-[#d4d4d8] leading-relaxed break-words prose prose-invert max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0 [&_a]:text-[#52a8ff] [&_a]:underline [&_code]:font-mono [&_code]:bg-[#18181b] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[#52a8ff] [&_code]:border [&_code]:border-white/[0.08] [&_code]:text-[11px] [&_ul]:pl-4 [&_ol]:pl-4">
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeSanitize]}
+                            components={{
+                                a: ({ node, ...props }) => (
+                                    <a {...props} target="_blank" rel="noreferrer" />
+                                ),
+                            }}
+                        >
+                            {message.content}
+                        </ReactMarkdown>
                     </div>
                 )}
             </div>

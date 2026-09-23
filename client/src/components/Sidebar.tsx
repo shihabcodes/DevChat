@@ -33,6 +33,15 @@ export default function Sidebar({
     const [showNewChannel, setShowNewChannel] = useState<boolean>(false);
     const [newChannelName, setNewChannelName] = useState<string>('');
     const [showInvite, setShowInvite] = useState<boolean>(false);
+    const [copiedInvite, setCopiedInvite] = useState<boolean>(false);
+
+    const handleCopyInvite = () => {
+        if (workspace?.inviteCode) {
+            navigator.clipboard.writeText(workspace.inviteCode);
+            setCopiedInvite(true);
+            setTimeout(() => setCopiedInvite(false), 2000);
+        }
+    };
 
     const handleCreateChannel = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -45,7 +54,6 @@ export default function Sidebar({
 
     return (
         <div className="w-[260px] min-w-[260px] h-screen bg-[#080809] border-r border-[#1f1f1f] flex flex-col justify-between select-none z-30 font-sans">
-            {/* Top Workspace Header */}
             <div>
                 <div className="px-4 py-3.5 border-b border-[#1f1f1f] bg-[#0a0a0c]">
                     <div className="flex items-center justify-between gap-2">
@@ -73,15 +81,13 @@ export default function Sidebar({
                         <div className="animate-fade-in mt-2.5 p-2.5 bg-[#0e0e10] border border-[#1f1f1f] rounded-lg text-xs">
                             <div className="flex items-center justify-between mb-1">
                                 <span className="text-[10px] font-mono uppercase text-[#71717a]">Invite Code</span>
-                                <span className="text-[9px] text-[#52a8ff]">Click to copy</span>
+                                <span className={`text-[9px] font-mono ${copiedInvite ? 'text-[#10b981]' : 'text-[#52a8ff]'}`}>
+                                    {copiedInvite ? 'Copied!' : 'Click to copy'}
+                                </span>
                             </div>
                             <code
                                 className="text-white font-mono text-xs cursor-pointer block py-1 px-2 bg-black rounded border border-[#2e2e2e] text-center hover:border-[#52a8ff] transition-colors"
-                                onClick={() => {
-                                    if (workspace?.inviteCode) {
-                                        navigator.clipboard.writeText(workspace.inviteCode);
-                                    }
-                                }}
+                                onClick={handleCopyInvite}
                             >
                                 {workspace.inviteCode}
                             </code>
@@ -89,7 +95,6 @@ export default function Sidebar({
                     )}
                 </div>
 
-                {/* Channels Navigation */}
                 <div className="p-3">
                     <div className="flex items-center justify-between px-2 mb-2">
                         <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#565656]">
@@ -140,7 +145,6 @@ export default function Sidebar({
                         })}
                     </div>
 
-                    {/* Online Members List */}
                     <div className="mt-6 px-2 mb-2">
                         <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#565656]">
                             Online ({onlineUsers.length})
@@ -157,9 +161,7 @@ export default function Sidebar({
                 </div>
             </div>
 
-            {/* Bottom Actions & User Profile */}
             <div className="p-3 border-t border-[#1f1f1f] bg-[#0a0a0c] space-y-2">
-                {/* AI Settings Button */}
                 <button
                     onClick={onOpenAISettings}
                     className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono border transition-colors ${
@@ -175,7 +177,6 @@ export default function Sidebar({
                     <span className="text-[10px] text-[#71717a]">⚙</span>
                 </button>
 
-                {/* User Profile & Sign Out */}
                 <div className="flex items-center justify-between px-1 pt-1">
                     <div className="flex items-center gap-2 min-w-0">
                         <div className="w-6 h-6 rounded-full bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[10px] font-bold text-white shrink-0">

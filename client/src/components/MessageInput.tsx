@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
@@ -44,22 +44,25 @@ export default function MessageInput({
         }, 2000);
     };
 
-    const handleSend = () => {
+    const handleSend = useCallback(() => {
         if (codeMode) {
-            if (codeContent.trim()) {
-                onSend(codeContent.trim(), 'code', language);
+            const trimmed = codeContent.trim();
+            if (trimmed) {
+                onSend(trimmed, 'code', language);
                 setCodeContent('');
                 setCodeMode(false);
             }
         } else {
-            if (content.trim()) {
-                onSend(content.trim(), 'text');
+            const trimmed = content.trim();
+            if (trimmed) {
+                onSend(trimmed, 'text');
                 setContent('');
+                if (inputRef.current) inputRef.current.style.height = 'auto';
             }
         }
         onStopTyping?.();
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    };
+    }, [codeMode, codeContent, content, language, onSend, onStopTyping]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey && !codeMode) {
@@ -68,12 +71,17 @@ export default function MessageInput({
         }
     };
 
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setContent(e.target.value);
+        handleTyping();
+        e.target.style.height = 'auto';
+        e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+    };
+
     return (
         <div className="border-t border-[#1f1f1f] p-3.5 bg-[#080809] flex flex-col gap-2.5 z-10 font-sans">
-            {/* Toolbar Row */}
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                    {/* Code Mode Toggle */}
                     <button
                         onClick={() => setCodeMode(!codeMode)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
@@ -86,7 +94,6 @@ export default function MessageInput({
                         <span>{codeMode ? 'Code Mode Active' : 'Share Code'}</span>
                     </button>
 
-                    {/* Language Selector */}
                     {codeMode && (
                         <select
                             value={language}
@@ -100,18 +107,16 @@ export default function MessageInput({
                     )}
                 </div>
 
-                {/* Send Button */}
                 <button
                     onClick={handleSend}
                     disabled={disabled || (codeMode ? !codeContent.trim() : !content.trim())}
                     className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white text-black hover:bg-[#e8e8e8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                     <span>Send</span>
-                    <span className="text-[10px] text-[#71717a]">↵</span>
+                    <span className="text-[10px] text-[#71717a] font-mono">{codeMode ? '⌘↵' : '↵'}</span>
                 </button>
             </div>
 
-            {/* Input Element */}
             {codeMode ? (
                 <div className="rounded-xl overflow-hidden border border-[#1f1f1f] bg-[#0c0c0e] h-[190px]">
                     <MonacoEditor
@@ -121,6 +126,11 @@ export default function MessageInput({
                         onChange={(val) => {
                             setCodeContent(val || '');
                             handleTyping();
+                        }}
+                        onMount={(editor, monaco) => {
+                            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+                                handleSend();
+                            });
                         }}
                         theme="vs-dark"
                         options={{
@@ -142,15 +152,12 @@ export default function MessageInput({
                 <textarea
                     ref={inputRef}
                     value={content}
-                    onChange={(e) => {
-                        setContent(e.target.value);
-                        handleTyping();
-                    }}
+                    onChange={handleTextChange}
                     onKeyDown={handleKeyDown}
                     disabled={disabled}
-                    placeholder={disabled ? 'Reconnecting to network…' : 'Message channel… (Enter to send, Shift+Enter for new line)'}
+                    placeholder={disabled ? 'Reconnecting to network...' : 'Message channel... (Enter to send, Shift+Enter for new line)'}
                     rows={1}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#1f1f1f] bg-[#0e0e10] text-[#ededed] text-xs outline-none resize-none min-h-[38px] max-h-[120px] focus:border-[#52a8ff] transition-colors placeholder:text-[#565656]"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#1f1f1f] bg-[#0e0e10] text-[#ededed] text-xs outline-none resize-none min-h-[38px] max-h-[140px] focus:border-[#52a8ff] transition-colors placeholder:text-[#565656]"
                 />
             )}
         </div>
