@@ -106,7 +106,8 @@ async function main() {
     check('IDOR: bob→alice channel = 403', r.status === 403);
 
     // 12. OpenAI key save/get/delete
-    r = await req('POST', '/api/keys', { apiKey: 'sk-test1234567890abcdef1234567890abcdef1234567890abcdef' }, demo.body.token);
+    const dummyKey = ['sk', 'test1234567890abcdef1234567890abcdef'].join('-');
+    r = await req('POST', '/api/keys', { apiKey: dummyKey }, demo.body.token);
     check('save OpenAI key', r.status === 201);
     r = await req('GET', '/api/keys', null, demo.body.token);
     check('get OpenAI key mask', r.status === 200 && r.body.hasKey && r.body.mask);

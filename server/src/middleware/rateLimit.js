@@ -1,14 +1,20 @@
 const rateLimit = require('express-rate-limit');
 
-// Per-user (when authenticated) or per-IP (when not) rate limiters.
-// Reasonable defaults for a public launch. Tighten on the AI endpoint
-// in particular since each call costs real money for the user.
+// Helper to resolve client IP accurately behind Cloudflare or reverse proxies.
+function getClientIp(req) {
+    const cfIp = req.headers['cf-connecting-ip'];
+    if (cfIp) return cfIp;
+    const xForwardedFor = req.headers['x-forwarded-for'];
+    if (xForwardedFor) return xForwardedFor.split(',')[0].trim();
+    return req.ip;
+}
 
 const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => getClientIp(req),
     message: { error: 'Too many requests, please slow down.' },
 });
 
@@ -17,6 +23,7 @@ const authLimiter = rateLimit({
     max: 30,
     standardHeaders: true,
     legacyHeaders: false,
+    keyGenerator: (req) => getClientIp(req),
     skipSuccessfulRequests: true,
     message: { error: 'Too many attempts. Try again in a few minutes.' },
 });
@@ -26,7 +33,7 @@ const aiLimiter = rateLimit({
     max: 50,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => (req.user ? req.user._id.toString() : req.ip),
+    keyGenerator: (req) => (req.user ? req.user._id.toString() : getClientIp(req)),
     message: { error: 'AI rate limit reached. Try again in an hour.' },
 });
 
