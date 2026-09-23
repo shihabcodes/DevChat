@@ -19,4 +19,4 @@ What else did you think about?
 
 ## Additional context
 
-Anything else — mockups, examples, etc.
+Anything else : mockups, examples, etc.
