@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
-import api, { ApiError } from '@/lib/api';
+import * as data from '@/lib/data';
 
 type AuthMode = 'login' | 'register' | 'invite';
 
@@ -16,6 +16,7 @@ export default function Home() {
     const [displayName, setDisplayName] = useState<string>('');
     const [inviteCode, setInviteCode] = useState<string>('');
     const [error, setError] = useState<string>('');
+    const [notice, setNotice] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
     const [demoLoading, setDemoLoading] = useState<boolean>(false);
@@ -28,26 +29,20 @@ export default function Home() {
     const [mockCopied, setMockCopied] = useState<boolean>(false);
     const explainTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    const goToWorkspace = async () => {
+        const user = await data.getCurrentUser();
+        if (!user) throw new Error('Could not load your profile. Please try again.');
+        const workspace = await data.ensureWorkspace(user);
+        router.push(`/workspace/${workspace.id}`);
+    };
+
+    // Already signed in (including arriving from an email confirmation link)?
     useEffect(() => {
-        const token = localStorage.getItem('devchat_token');
-        if (token && token !== 'demo-guest-token') {
-            api.token = token;
-            api.getMe()
-                .then((data) => {
-                    if (data.workspaces && data.workspaces.length > 0) {
-                        router.push(`/workspace/${data.workspaces[0]._id}`);
-                    } else {
-                        setCheckingAuth(false);
-                    }
-                })
-                .catch(() => {
-                    api.clearToken();
-                    setCheckingAuth(false);
-                });
-        } else {
-            setCheckingAuth(false);
-        }
-    }, [router]);
+        data.getCurrentUser()
+            .then((user) => (user ? goToWorkspace() : setCheckingAuth(false)))
+            .catch(() => setCheckingAuth(false));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -77,22 +72,27 @@ export default function Home() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [authModalOpen]);
 
+    const errorText = (err: unknown, fallback: string) =>
+        err instanceof Error && err.message ? err.message : fallback;
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
+        setNotice('');
         setLoading(true);
         try {
             if (mode === 'register') {
-                const data = await api.register(email, password, displayName);
-                router.push(`/workspace/${data.workspace._id}`);
-            } else if (mode === 'login') {
-                const data = await api.login(email, password);
-                if (data.workspaces && data.workspaces.length > 0) {
-                    router.push(`/workspace/${data.workspaces[0]._id}`);
+                const { needsConfirmation } = await data.signUp(email, password, displayName);
+                if (needsConfirmation) {
+                    setNotice(`We sent a confirmation link to ${email}. Click it to finish signing up.`);
+                    return;
                 }
+            } else {
+                await data.signIn(email, password);
             }
-        } catch (err: any) {
-            setError(err.message || 'Authentication failed');
+            await goToWorkspace();
+        } catch (err) {
+            setError(errorText(err, 'Authentication failed'));
         } finally {
             setLoading(false);
         }
@@ -102,21 +102,11 @@ export default function Home() {
         setError('');
         setLoading(true);
         try {
-            if (!credentialResponse.credential) {
-                throw new Error('Missing Google credential');
-            }
-            const data = await api.googleLogin(credentialResponse.credential);
-            if (data.workspaces && data.workspaces.length > 0) {
-                router.push(`/workspace/${data.workspaces[0]._id}`);
-            } else if (data.workspace) {
-                router.push(`/workspace/${data.workspace._id}`);
-            }
-        } catch (err: any) {
-            if (err instanceof ApiError && err.code === 'EXISTING_PASSWORD_ACCOUNT') {
-                setError('An account with this email exists. Sign in with password first.');
-            } else {
-                setError(err.message || 'Google login failed');
-            }
+            if (!credentialResponse.credential) throw new Error('Missing Google credential');
+            await data.signInWithGoogleIdToken(credentialResponse.credential);
+            await goToWorkspace();
+        } catch (err) {
+            setError(errorText(err, 'Google login failed'));
         } finally {
             setLoading(false);
         }
@@ -129,10 +119,13 @@ export default function Home() {
         setError('');
         setLoading(true);
         try {
-            const data = await api.joinWorkspace(inviteCode);
-            router.push(`/workspace/${data._id}`);
-        } catch (err: any) {
-            setError(err.message || 'Invalid invite code');
+            if (!(await data.getCurrentUser())) {
+                throw new Error('Sign in or create an account first, then join with the invite code.');
+            }
+            const workspace = await data.joinWorkspace(inviteCode);
+            router.push(`/workspace/${workspace.id}`);
+        } catch (err) {
+            setError(errorText(err, 'Invalid invite code'));
         } finally {
             setLoading(false);
         }
@@ -141,28 +134,13 @@ export default function Home() {
     const handleTryDemo = async () => {
         setError('');
         setDemoLoading(true);
-
-        const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 4000)
-        );
-
         try {
-            const data = await Promise.race([api.startDemo(), timeoutPromise]);
-            if (data && data.workspace && data.workspace._id) {
-                if (data.messages) {
-                    sessionStorage.setItem(
-                        `devchat_demo_messages_${data.channel._id}`,
-                        JSON.stringify(data.messages)
-                    );
-                }
-                router.push(`/workspace/${data.workspace._id}`);
-                return;
-            }
-            throw new Error('Fallback required');
+            const workspaceId = await data.startDemo();
+            router.push(`/workspace/${workspaceId}`);
         } catch (err) {
-            localStorage.setItem('devchat_token', 'demo-guest-token');
-            localStorage.setItem('devchat_demo_mode', 'true');
-            router.push('/workspace/demo-workspace');
+            setDemoLoading(false);
+            setError(errorText(err, 'Could not start the demo. Please try again.'));
+            setAuthModalOpen(true);
         }
     };
 
@@ -852,6 +830,12 @@ export default function Home() {
                             </div>
                         )}
 
+                        {notice && (
+                            <div role="status" className="px-3.5 py-2.5 rounded-lg bg-[#10b981]/10 border border-[#10b981]/30 text-[#6ee7b7] text-xs mb-4">
+                                {notice}
+                            </div>
+                        )}
+
                         {mode === 'invite' ? (
                             <form onSubmit={handleJoinWorkspace} className="space-y-4">
                                 <div>
@@ -930,21 +914,25 @@ export default function Home() {
                                     {loading ? 'Processing…' : mode === 'login' ? 'Sign In' : 'Create Account'}
                                 </button>
 
-                                <div className="flex items-center my-4">
-                                    <div className="flex-1 h-px bg-[#1f1f1f]" />
-                                    <span className="px-3 text-[10px] font-mono text-[#565656] uppercase">OR</span>
-                                    <div className="flex-1 h-px bg-[#1f1f1f]" />
-                                </div>
+                                {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+                                    <>
+                                    <div className="flex items-center my-4">
+                                        <div className="flex-1 h-px bg-[#1f1f1f]" />
+                                        <span className="px-3 text-[10px] font-mono text-[#565656] uppercase">OR</span>
+                                        <div className="flex-1 h-px bg-[#1f1f1f]" />
+                                    </div>
 
-                                <div className="flex justify-center">
-                                    <GoogleLogin
-                                        onSuccess={handleGoogleSuccess}
-                                        onError={handleGoogleError}
-                                        theme="filled_black"
-                                        shape="pill"
-                                        text={mode === 'login' ? 'signin_with' : 'signup_with'}
-                                    />
-                                </div>
+                                    <div className="flex justify-center">
+                                        <GoogleLogin
+                                            onSuccess={handleGoogleSuccess}
+                                            onError={handleGoogleError}
+                                            theme="filled_black"
+                                            shape="pill"
+                                            text={mode === 'login' ? 'signin_with' : 'signup_with'}
+                                        />
+                                    </div>
+                                    </>
+                                )}
                             </form>
                         )}
                     </div>
