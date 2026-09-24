@@ -57,6 +57,8 @@ interface ChannelEvents {
     onMessageInserted: (id: string) => void;
     onMessageUpdated: (id: string) => void;
     onMessageDeleted: (id: string) => void;
+    /** Called when the subscription comes back after an error, to backfill missed messages. */
+    onResync: () => void;
 }
 
 export function useChannelRealtime(channelId: string | null, user: User | null, events: ChannelEvents) {
@@ -70,7 +72,7 @@ export function useChannelRealtime(channelId: string | null, user: User | null, 
     useEffect(() => {
         if (!channelId || !user) return;
         let cancelled = false;
-        let everConnected = false;
+        let lostConnection = false;
         const expiry = new Map<string, ReturnType<typeof setTimeout>>();
 
         const dropTyping = (userId: string) => {
@@ -114,10 +116,13 @@ export function useChannelRealtime(channelId: string | null, user: User | null, 
                 .subscribe((status, err) => {
                     if (err) console.warn(`[realtime] channel:${channelId} ${status}`, err.message);
                     if (status === 'SUBSCRIBED') {
-                        everConnected = true;
+                        if (lostConnection) eventsRef.current.onResync();
+                        lostConnection = false;
                         setConnection('connected');
                     } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                        setConnection(everConnected ? 'reconnecting' : 'disconnected');
+                        // supabase-js rejoins on its own; we backfill once it does.
+                        lostConnection = true;
+                        setConnection('reconnecting');
                     } else if (status === 'CLOSED' && !cancelled) {
                         setConnection('disconnected');
                     }
