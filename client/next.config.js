@@ -31,7 +31,7 @@ const securityHeaders = [
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com data:",
             "img-src 'self' data: https: blob:",
-            "connect-src 'self' * ws: wss:",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com",
             "worker-src 'self' blob:",
             "frame-src 'self' https://accounts.google.com",
         ].join('; '),
@@ -39,14 +39,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-    async rewrites() {
-        return [
-            {
-                source: '/api/:path*',
-                destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'}/:path*`,
-            },
-        ];
-    },
     async headers() {
         return [
             {

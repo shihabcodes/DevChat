@@ -9,8 +9,6 @@ export interface ChatAreaProps {
     channel: Channel | null;
     currentUser: User | null;
     typingUsers?: TypingUser[];
-    onExplain?: any;
-    onMissingKey?: () => void;
     onRetry?: (message: Message) => void;
     loading?: boolean;
     isDemo?: boolean;
@@ -21,8 +19,6 @@ export default function ChatArea({
     channel,
     currentUser,
     typingUsers,
-    onExplain,
-    onMissingKey,
     onRetry,
     loading,
     isDemo,
@@ -88,13 +84,10 @@ export default function ChatArea({
                 ) : (
                     messages.map((msg) => (
                         <MessageBubble
-                            key={msg._id}
+                            key={msg.id}
                             message={msg}
-                            isOwn={msg.user?._id === currentUser?._id}
-                            onExplain={onExplain}
-                            onMissingKey={onMissingKey}
+                            isOwn={msg.user?.id === currentUser?.id}
                             onRetry={onRetry}
-                            isDemo={isDemo}
                         />
                     ))
                 )}
