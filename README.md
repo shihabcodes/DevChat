@@ -2,16 +2,14 @@
 
 # DevChat : Real-Time Developer Chat
 
-**Real-time chat built for developers. Share code with syntax highlighting, stream AI explanations in-line, collaborate faster without alt-tabbing to ChatGPT.**
+**Real-time chat built for developers. Share code with syntax highlighting, stream AI explanations in-line, collaborate without alt-tabbing to ChatGPT.**
 
 [🚀 Live Demo](https://dev-chat-virid.vercel.app) · [📚 Deployment Guide](./DEPLOYMENT.md) · [🐛 Report a Bug](https://github.com/shihabcodes/DevChat/issues/new)
 
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
 ![React](https://img.shields.io/badge/React-19-blue?logo=react)
-![Express](https://img.shields.io/badge/Express-4.x-green?logo=express)
-![Socket.io](https://img.shields.io/badge/Socket.io-4.x-white?logo=socket.io)
-![MongoDB](https://img.shields.io/badge/MongoDB-8.x-green?logo=mongodb)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Realtime-3ecf8e?logo=supabase)
+![OpenAI](https://img.shields.io/badge/OpenAI-bring%20your%20own%20key-412991?logo=openai)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 </div>
@@ -20,160 +18,120 @@
 
 ## Features
 
-- 💬 **Real-time messaging** via WebSockets (Socket.io) : with **optimistic send** and an **automatic reconnect banner**
-- 🖥️ **Syntax-highlighted code** with **Shiki** (the same engine that powers VS Code's docs), 20+ languages
-- ✨ **AI explanations** : click "Explain" on any code block, get a **streamed** GPT-4o-mini response (you bring your own OpenAI key, encrypted at rest)
-- ⚡ **AI cache** : explanations are saved to the message, so the second time is instant (and free)
-- 🏢 **Workspaces & Channels** : create teams, organize conversations by topic
-- 🟢 **Presence indicators** : see who's online in real-time
-- ⌠ **Typing indicators** : "Alice is typing..."
-- 🔗 **Invite codes** : share a code to invite teammates
-- 🔒 **Google OAuth** + email/password
-- 🚀 **Try-the-demo mode** : no signup, full workspace pre-seeded with code samples and cached AI explanations
-- 📱 **Mobile-friendly** : sidebar becomes a slide-out drawer on small screens
-- 🛡️ **React error boundary** : a single component crash never blanks the whole UI
-- 🌙 **Dark-mode first** : built for developers who live in the terminal
+- 💬 **Real-time messaging** with optimistic send, retry, and a reconnect banner
+- ⌨️ **Typing indicators** and 🟢 **who's online** per workspace
+- 🖥️ **Syntax-highlighted code** with Shiki, and a Monaco editor for writing snippets
+- ✨ **AI explanations** streamed in-line. You bring your own OpenAI key, which is encrypted at rest and never sent back to the browser
+- ⚡ **Shared AI cache**: once a snippet is explained, teammates see it instantly and for free
+- 🏢 **Workspaces & channels**, joined with a rotatable invite code
+- 🚀 **One-click demo**: a private guest workspace, no signup, deleted after 24 hours
+- 📱 **Mobile-friendly** sidebar drawer
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 15 (App Router) + React 19 |
-| Styling | Tailwind CSS 4 + custom design tokens |
-| Code highlighting | Shiki (lazy-loaded, client-side) |
-| Real-time | Socket.io 4.x |
-| Backend | Node.js + Express 4 |
-| Database | MongoDB 8.x + Mongoose |
-| Auth | JWT (email/password) + Google OAuth |
-| AI | OpenAI GPT-4o-mini, **streaming** via SSE |
-| Security | Helmet, Zod input validation, AES-256-GCM at-rest encryption for user OpenAI keys, per-route authorization, rate limiting |
+| Frontend | Next.js 15 (App Router) + React 19, Tailwind CSS 4 |
+| Database | Supabase Postgres with row level security on every table |
+| Auth | Supabase Auth: email/password, anonymous guests, optional Google |
+| Real-time | Supabase Realtime: message changes, broadcast (typing), presence (online) |
+| AI | Next.js route handlers on Vercel calling OpenAI, streamed over SSE |
+| Hosting | Vercel (app) + Supabase (database, auth, realtime), both on free tiers |
+
+There is no separate backend server. The browser talks to Supabase directly, and the database decides what each user may read or write. The only server code is the two AI routes, which need secrets.
 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- MongoDB (local install or [Atlas free tier](https://www.mongodb.com/atlas))
+- Node.js 20+
+- A free [Supabase](https://supabase.com) project
+- The [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
 
-### 1. Clone & install
+### 1. Install
 
 ```bash
 git clone https://github.com/shihabcodes/DevChat.git
-cd DevChat
-
-# Server
-cd server && npm install
-
-# Client (new terminal)
-cd ../client && npm install
+cd DevChat/client && npm install
 ```
 
-### 2. Configure environment
+### 2. Set up the database
 
 ```bash
-# Server
-cp server/.env.example server/.env
-# Edit server/.env : set MONGODB_URI and a real JWT_SECRET (>= 32 chars)
+cd ..                       # repo root
+supabase login
+supabase link --project-ref <your-project-ref>
+supabase db push            # applies supabase/migrations
+```
 
-# Client
+In the Supabase dashboard, under **Authentication**:
+- **Sign In / Providers**: turn on *Allow anonymous sign-ins* (used by the demo)
+- **URL Configuration**: Site URL `http://localhost:3000`, and add your production URL to Redirect URLs
+
+### 3. Configure environment
+
+```bash
 cp client/.env.example client/.env.local
-# Edit client/.env.local : leave NEXT_PUBLIC_API_URL pointing at the local backend
 ```
 
-### 3. Run
+Fill in `client/.env.local`:
+
+| Variable | Where it comes from | Secret? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API Keys | No |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Same page, publishable key | No |
+| `SUPABASE_SECRET_KEY` | Same page, **secret** key | **Yes** |
+| `AI_KEY_ENCRYPTION_SECRET` | `openssl rand -base64 48` | **Yes** |
+| `OPENAI_MODEL` | Optional, defaults to `gpt-4o-mini` | No |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Optional, enables Google sign-in | No |
+
+### 4. Run
 
 ```bash
-# Terminal 1 : backend
-cd server && npm run dev
-# → http://localhost:5001
-
-# Terminal 2 : frontend
-cd client && npm run dev
-# → http://localhost:3000
+cd client && npm run dev    # → http://localhost:3000
 ```
 
-Visit **http://localhost:3000** → click **🚀 Try the demo** to land in a fully seeded workspace in 2 seconds.
+Click **Try Demo** to land in a seeded guest workspace.
 
-### 4. Verify the install
-
-With the server running on `:5001`, run an end-to-end smoke test (no test framework needed):
+### 5. Verify the database rules
 
 ```bash
-cd server && node smoke.js
+supabase db query --linked -f supabase/tests/rls_test.sql
 ```
 
-You should see 22 passing checks covering health, validation, disposable email block, auth flows, demo seed, AI explain cache hit + 412, IDOR protection, and OpenAI key CRUD.
+Every returned row should have `pass = true`. The test creates throwaway users, tries 35 allowed and forbidden actions (outsiders reading messages, members promoting themselves, planting fake AI answers, and so on), then deletes everything it created.
 
 ## Project Structure
 
 ```
 DevChat/
-├── client/                  # Next.js frontend (App Router)
+├── client/                      # Next.js app (deployed to Vercel)
 │   └── src/
-│       ├── app/             # Pages: / and /workspace/[id]
-│       ├── components/      # UI: Sidebar, ChatArea, MessageBubble, CodeBlock, AISettings
-│       └── lib/             # api client, socket client, Shiki highlighter
-├── server/                  # Express backend
-│   └── src/
-│       ├── config/          # env, db, logger
-│       ├── models/          # Mongoose schemas: User, Workspace, Channel, Message
-│       ├── routes/          # REST API: auth, workspaces, channels, messages, ai, keys, demo
-│       ├── socket/          # Socket.io handlers with membership checks
-│       ├── middleware/      # auth, authorization, validation, rate limiting
-│       └── utils/           # AES-256-GCM crypto helper
-├── DEPLOYMENT.md            # Production deploy walkthrough
+│       ├── app/                 # Pages: / and /workspace/[id]
+│       │   └── api/ai/          # Server routes: key (BYOK) and explain (SSE)
+│       ├── components/          # Sidebar, ChatArea, MessageBubble, CodeBlock, AISettings
+│       └── lib/
+│           ├── supabase.ts      # Browser client
+│           ├── data.ts          # Data access (auth, workspaces, channels, messages)
+│           ├── realtime.ts      # Live messages, typing, presence hooks
+│           ├── ai.ts            # Browser helpers for the AI routes
+│           └── server/          # Server-only: admin client, auth check, encryption
+├── supabase/
+│   ├── migrations/              # Schema, RLS policies, realtime auth, cron jobs
+│   └── tests/rls_test.sql       # Allow/deny checks for every policy
+├── DEPLOYMENT.md
 └── README.md
 ```
 
-## API Highlights
-
-All routes (except `/api/auth/*`, `/api/demo`, `/api/health`) require a JWT in the `Authorization: Bearer <token>` header.
-
-| Method | Path | Purpose |
-|---|---|---|
-| `POST` | `/api/auth/register` | Email + password signup |
-| `POST` | `/api/auth/login` | Email + password login |
-| `POST` | `/api/auth/google` | Google OAuth ID token sign-in |
-| `GET` | `/api/auth/me` | Current user + workspaces + hasOpenaiKey |
-| `POST` | `/api/demo` | Create an ephemeral demo workspace (auto-expires) |
-| `GET` `/POST` | `/api/workspaces` | List / create workspaces |
-| `GET` | `/api/workspaces/:id` | Get a workspace (membership-checked) |
-| `POST` | `/api/workspaces/join` | Join via invite code |
-| `GET` `/POST` `/PATCH` `/DELETE` | `/api/channels[/...]` | Channel CRUD, membership-checked |
-| `GET` | `/api/messages/channel/:id` | List messages (membership-checked) |
-| `POST` | `/api/ai/explain` | Streamed AI explanation (SSE) |
-| `GET` `POST` `DELETE` | `/api/keys` | Manage user's OpenAI key |
-| `POST` | `/api/keys/test` | Verify the stored key against OpenAI |
-| `GET` | `/api/health` | Health + Mongo status |
-
 ## Security
 
-DevChat is built with the assumption that a hostile user is poking at every endpoint. Highlights:
-
-- **Helmet** security headers (Helmet's default CSP in prod)
-- **CORS** allowlist from `ALLOWED_ORIGINS` env
-- **Request body size** capped at 64 KB
-- **Zod** input validation on every route + socket payload
-- **JWT_SECRET** runtime check: server refuses to boot in production with a placeholder secret
-- **Per-route authorization middleware** : no IDOR, no implicit cross-tenant access
-- **Per-route + global rate limiting** (express-rate-limit)
-- **Disposable email blocklist** on signup
-- **OpenAI keys** encrypted at rest with AES-256-GCM (random IV per write, auth tag verified on read)
-- **Socket.io** membership checks on `joinChannel` and `sendMessage`
-- **Graceful shutdown** on SIGTERM (drain sockets, close server, disconnect Mongo)
-- **Structured logging** with request IDs (Pino-style in prod, single-line in dev)
-
-## AI Streaming
-
-`POST /api/ai/explain` returns Server-Sent Events. Each `delta` event carries one chunk of the streamed response. The final `done` event carries the full explanation, which the server also persists to `Message.aiExplanation` so the same request is free the second time.
-
-```js
-const stream = api.explainCodeStream({ messageId, code, language, onDelta });
-const { text } = await stream.result;
-```
-
-## Why this project exists
-
-Developers context-switch to ChatGPT to ask about code shared in chat. DevChat embeds the AI in the chat so the switch goes away. The bet is that the chat is where the code is, so the AI should be there too.
+- **Row level security everywhere.** Membership in a workspace is the single rule for seeing its channels, messages, members and AI explanations. It's enforced in Postgres, so a bug in the UI can't leak data.
+- **Least privilege.** Anonymous visitors have no table access. Signed-in users can only update specific columns (for example, message content but not its channel or author). `TRUNCATE` is revoked.
+- **Server-only writes where it matters.** AI explanations and stored API keys can only be written by the server, so nobody can plant a fake "AI" answer.
+- **Invite codes** are visible only to workspace owners and admins, and can be rotated.
+- **Abuse limits.** 10 messages per 10 seconds per user (enforced in the database), 30 AI explanations per hour, and Supabase's built-in per-IP limits on sign-ups and guest sign-ins.
+- **Guest cleanup.** A `pg_cron` job deletes demo guests and everything they created after 24 hours.
+- **API keys** are verified with OpenAI, encrypted with AES-256-GCM before storage, and never returned to the browser.
+- **Content Security Policy** only allows network connections to the app itself, Supabase, and Google.
 
 ## License
 
