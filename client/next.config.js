@@ -27,9 +27,9 @@ const securityHeaders = [
         key: 'Content-Security-Policy',
         value: [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com data:",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+            "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:",
             "img-src 'self' data: https: blob:",
             "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com",
             "worker-src 'self' blob:",
@@ -39,6 +39,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+    devIndicators: false,
     async headers() {
         return [
             {
