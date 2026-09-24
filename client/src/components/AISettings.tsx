@@ -1,20 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import api from '@/lib/api';
-
-export interface KeyInfo {
-    hasKey?: boolean;
-    mask?: string | null;
-    setAt?: string | null;
-}
-
-export interface TestResult {
-    ok: boolean;
-    reason?: string;
-    mask?: string;
-    message?: string;
-}
+import { getKeyInfo, removeKey, saveKey, type KeyInfo } from '@/lib/ai';
 
 interface AISettingsProps {
     open: boolean;
@@ -25,17 +12,16 @@ interface AISettingsProps {
 export default function AISettings({ open, onClose, onChange }: AISettingsProps) {
     const [keyInfo, setKeyInfo] = useState<KeyInfo | null>(null);
     const [draft, setDraft] = useState<string>('');
-    const [testing, setTesting] = useState<boolean>(false);
     const [saving, setSaving] = useState<boolean>(false);
-    const [testResult, setTestResult] = useState<TestResult | null>(null);
+    const [confirmRemove, setConfirmRemove] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!open) return;
         setError(null);
-        setTestResult(null);
+        setConfirmRemove(false);
         setDraft('');
-        api.getKey()
+        getKeyInfo()
             .then(setKeyInfo)
             .catch((e: Error) => setError(e.message));
     }, [open]);
@@ -49,6 +35,9 @@ export default function AISettings({ open, onClose, onChange }: AISettingsProps)
 
     if (!open) return null;
 
+    const errorText = (e: unknown) => (e instanceof Error ? e.message : 'Something went wrong');
+
+    // The server checks the key with OpenAI before saving it.
     const handleSave = async () => {
         const trimmed = draft.trim();
         if (!trimmed.startsWith('sk-')) {
@@ -58,42 +47,29 @@ export default function AISettings({ open, onClose, onChange }: AISettingsProps)
         setError(null);
         setSaving(true);
         try {
-            await api.setKey(trimmed);
-            const info = await api.getKey();
-            setKeyInfo(info);
+            const info = await saveKey(trimmed);
+            setKeyInfo({ ...info, setAt: new Date().toISOString() });
             setDraft('');
-            if (onChange) onChange(info);
-        } catch (e: any) {
-            setError(e.message);
+            onChange?.(info);
+        } catch (e) {
+            setError(errorText(e));
         } finally {
             setSaving(false);
         }
     };
 
-    const handleTest = async () => {
-        setTesting(true);
-        setTestResult(null);
-        setError(null);
-        try {
-            const res = await api.testKey();
-            setTestResult({ ok: res.ok, reason: res.reason, mask: res.mask });
-        } catch (e: any) {
-            setTestResult({ ok: false, reason: 'request_failed', message: e.message });
-        } finally {
-            setTesting(false);
-        }
-    };
-
     const handleRemove = async () => {
-        if (!confirm('Remove your OpenAI key? You can add it again anytime.')) return;
+        if (!confirmRemove) {
+            setConfirmRemove(true);
+            return;
+        }
         try {
-            await api.deleteKey();
-            const info = await api.getKey();
+            const info = await removeKey();
             setKeyInfo(info);
-            setTestResult(null);
-            if (onChange) onChange(info);
-        } catch (e: any) {
-            setError(e.message);
+            setConfirmRemove(false);
+            onChange?.(info);
+        } catch (e) {
+            setError(errorText(e));
         }
     };
 
@@ -115,7 +91,7 @@ export default function AISettings({ open, onClose, onChange }: AISettingsProps)
                     <div className="flex items-start gap-3 p-3 rounded-xl bg-[#52a8ff]/5 border border-[#52a8ff]/20">
                         <span className="text-sm mt-0.5">🔒</span>
                         <p className="text-xs text-[#a1a1a1] leading-relaxed">
-                            Your key is <strong className="text-white">encrypted at rest with AES-256-GCM</strong> and used exclusively for your requests. Never logged or shared.
+                            Your key is <strong className="text-white">encrypted at rest with AES-256-GCM</strong>, never sent back to the browser, and only used for explanations you request.
                         </p>
                     </div>
 
@@ -162,42 +138,21 @@ export default function AISettings({ open, onClose, onChange }: AISettingsProps)
                         </div>
                     )}
 
-                    {testResult && (
-                        <div className={`px-3 py-2 rounded-lg text-xs font-mono ${
-                            testResult.ok
-                                ? 'bg-[#10b981]/10 border border-[#10b981]/30 text-[#86efac]'
-                                : 'bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5]'
-                        }`}>
-                            {testResult.ok
-                                ? `✓ Key verified${testResult.mask ? ` (${testResult.mask})` : ''}`
-                                : testResult.reason === 'invalid_key'
-                                    ? '✗ OpenAI rejected the key. Verify and re-enter.'
-                                    : `✗ ${testResult.message || testResult.reason || 'Verification failed'}`}
-                        </div>
-                    )}
-
                     <div className="flex gap-2 pt-1">
                         <button
                             onClick={handleSave}
                             disabled={saving || !draft}
                             className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-white text-black hover:bg-[#e8e8e8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {saving ? 'Saving…' : (keyInfo?.hasKey ? 'Replace key' : 'Save key')}
+                            {saving ? 'Verifying…' : (keyInfo?.hasKey ? 'Replace key' : 'Verify & save key')}
                         </button>
                         {keyInfo?.hasKey && (
                             <>
                                 <button
-                                    onClick={handleTest}
-                                    disabled={testing}
-                                    className="px-3.5 py-2.5 rounded-xl text-xs font-mono border border-[#2e2e2e] text-[#a1a1a1] hover:text-white hover:border-[#3a3a3a] disabled:opacity-50"
-                                >
-                                    {testing ? 'Testing…' : 'Test'}
-                                </button>
-                                <button
                                     onClick={handleRemove}
                                     className="px-3.5 py-2.5 rounded-xl text-xs font-mono border border-[#ef4444]/40 text-[#f87171] hover:bg-[#ef4444]/10"
                                 >
-                                    Remove
+                                    {confirmRemove ? 'Confirm remove' : 'Remove'}
                                 </button>
                             </>
                         )}

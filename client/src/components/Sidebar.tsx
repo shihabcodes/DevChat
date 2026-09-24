@@ -127,10 +127,10 @@ export default function Sidebar({
 
                     <div className="space-y-0.5 max-h-[260px] overflow-y-auto">
                         {channels.map((channel) => {
-                            const isActive = activeChannel?._id === channel._id;
+                            const isActive = activeChannel?.id === channel.id;
                             return (
                                 <button
-                                    key={channel._id}
+                                    key={channel.id}
                                     onClick={() => onSelectChannel(channel)}
                                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all text-left ${
                                         isActive
@@ -151,8 +151,8 @@ export default function Sidebar({
                         </span>
                     </div>
                     <div className="space-y-1.5 px-2 max-h-[160px] overflow-y-auto">
-                        {onlineUsers.map((u, i) => (
-                            <div key={i} className="flex items-center gap-2 text-xs text-[#a1a1a1]">
+                        {onlineUsers.map((u) => (
+                            <div key={u.id} className="flex items-center gap-2 text-xs text-[#a1a1a1]">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
                                 <span className="truncate">{u.displayName}</span>
                             </div>
@@ -176,6 +176,12 @@ export default function Sidebar({
                     </div>
                     <span className="text-[10px] text-[#71717a]">⚙</span>
                 </button>
+
+                {isDemo && (
+                    <p className="px-1 text-[10px] leading-snug text-[#71717a]">
+                        Guest demo: this workspace is deleted after 24 hours.
+                    </p>
+                )}
 
                 <div className="flex items-center justify-between px-1 pt-1">
                     <div className="flex items-center gap-2 min-w-0">

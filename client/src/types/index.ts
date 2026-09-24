@@ -1,84 +1,48 @@
 export interface User {
-    _id: string;
-    email?: string;
-    displayName?: string;
-    avatar?: string;
-    hasApiKey?: boolean;
-    role?: string;
-}
-
-export interface Channel {
-    _id: string;
-    name: string;
-    workspaceId?: string;
-    topic?: string;
-    createdAt?: string;
+    id: string;
+    displayName: string;
+    avatar?: string | null;
+    isGuest?: boolean;
 }
 
 export interface Workspace {
-    _id: string;
+    id: string;
     name: string;
-    owner?: string | User;
-    inviteCode?: string;
-    channels?: Channel[];
-    members?: User[];
-    createdAt?: string;
+    ownerId: string;
+    inviteCode?: string | null;
 }
 
-export interface MessageUser {
-    _id?: string;
-    displayName?: string;
-    avatar?: string;
+export interface Channel {
+    id: string;
+    name: string;
+    workspaceId: string;
+    topic?: string;
 }
+
+export type MessageType = 'text' | 'code';
 
 export interface Message {
-    _id: string;
-    channelId?: string;
-    channel?: string;
-    sender?: User | string;
-    user?: MessageUser | User;
-    content?: string;
-    code?: string;
-    type?: string;
+    id: string;
+    channelId: string;
+    user?: User;
+    content: string;
+    type: MessageType;
     language?: string;
-    aiExplanation?: string;
-    createdAt?: string;
-    optimistic?: boolean;
+    aiExplanation?: string | null;
+    createdAt: string;
+    editedAt?: string | null;
     _pending?: boolean;
     _failed?: boolean;
-    _tempId?: string;
+    _error?: string;
 }
 
 export interface TypingUser {
     userId: string;
     displayName?: string;
-    channelId?: string;
 }
 
 export interface OnlineUser {
-    _id?: string;
+    id: string;
     displayName: string;
-    avatar?: string;
-}
-
-export interface AIStreamResponse {
-    delta?: string;
-    full?: string;
-    text?: string;
-}
-
-export interface AuthResponse {
-    token?: string;
-    user?: User;
-    workspace?: Workspace;
-    workspaces?: Workspace[];
-    hasOpenaiKey?: boolean;
-}
-
-export interface DemoResponse {
-    token: string;
-    user: User;
-    workspace: Workspace;
-    channel: Channel;
-    messages: Message[];
+    avatar?: string | null;
 }

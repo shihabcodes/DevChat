@@ -1,453 +1,179 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import ChatArea from '@/components/ChatArea';
 import MessageInput from '@/components/MessageInput';
-import AISettings from '@/components/AISettings';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import api from '@/lib/api';
-import { connectSocket, disconnectSocket } from '@/lib/socket';
-import { User, Workspace, Channel, Message, OnlineUser, TypingUser } from '@/types';
-import type { Socket } from 'socket.io-client';
+import AISettings from '@/components/AISettings';
+import { getKeyInfo } from '@/lib/ai';
+import * as data from '@/lib/data';
+import { useChannelRealtime, useWorkspacePresence } from '@/lib/realtime';
+import type { User, Workspace, Channel, Message, MessageType } from '@/types';
 
-const TEMP_ID = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const tempId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-// Fallback seed data for instant client-side demo mode
-const DEMO_CHANNELS: Channel[] = [
-    { _id: 'ch-general', name: 'general' },
-    { _id: 'ch-ai-codegen', name: 'ai-codegen' },
-    { _id: 'ch-architecture', name: 'architecture' },
-];
-
-const DEMO_SEED_MESSAGES: Record<string, Message[]> = {
-    'ch-general': [
-        {
-            _id: 'msg-seed-1',
-            content: 'Welcome to the DevChat engineering workspace! Here is our high-performance cache invalidator in TypeScript:',
-            type: 'text',
-            channel: 'ch-general',
-            user: { _id: 'u-alex', displayName: 'Alex (Staff Eng)' },
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-        },
-        {
-            _id: 'msg-seed-2',
-            content: `export async function invalidateCacheKey(key: string, ttlSeconds: number = 300): Promise<boolean> {\n  const pipeline = redis.pipeline();\n  pipeline.del(key);\n  pipeline.publish('cache:invalidations', JSON.stringify({ key, timestamp: Date.now() }));\n  const results = await pipeline.exec();\n  return results ? results.every(([err]) => !err) : false;\n}`,
-            type: 'code',
-            language: 'typescript',
-            channel: 'ch-general',
-            user: { _id: 'u-alex', displayName: 'Alex (Staff Eng)' },
-            aiExplanation: 'This TypeScript function executes an atomic Redis pipeline to delete a cached key and publish an invalidation event across the cluster.\n\nKey details:\n1. Atomic pipeline prevents race conditions during multi-instance invalidation.\n2. Invalidation event notifies connected WebSocket servers to drop L1 local memory caches.\n3. Error handling verifies that all pipeline operations executed without failure.',
-            createdAt: new Date(Date.now() - 3500000).toISOString(),
-        },
-        {
-            _id: 'msg-seed-3',
-            content: 'Click "Explain Code" on the snippet above to see the streaming AI breakdown in action, or send your own code snippet below!',
-            type: 'text',
-            channel: 'ch-general',
-            user: { _id: 'u-sarah', displayName: 'Sarah (Founding Eng)' },
-            createdAt: new Date(Date.now() - 1800000).toISOString(),
-        }
-    ],
-    'ch-ai-codegen': [
-        {
-            _id: 'msg-seed-4',
-            content: 'Here is the streaming SSE proxy handler for our LLM completions in Node.js:',
-            type: 'text',
-            channel: 'ch-ai-codegen',
-            user: { _id: 'u-shihab', displayName: 'Shihab (AI Lead)' },
-            createdAt: new Date(Date.now() - 1200000).toISOString(),
-        },
-        {
-            _id: 'msg-seed-5',
-            content: `app.post('/api/ai/stream', async (req, res) => {\n  res.setHeader('Content-Type', 'text/event-stream');\n  res.setHeader('Cache-Control', 'no-cache');\n  res.setHeader('Connection', 'keep-alive');\n\n  const stream = await openai.chat.completions.create({\n    model: 'gpt-4o-mini',\n    messages: req.body.messages,\n    stream: true,\n  });\n\n  for await (const chunk of stream) {\n    const delta = chunk.choices[0]?.delta?.content || '';\n    if (delta) res.write(\`data: \${JSON.stringify({ delta })}\\n\\n\`);\n  }\n  res.write('data: [DONE]\\n\\n');\n  res.end();\n});`,
-            type: 'code',
-            language: 'javascript',
-            channel: 'ch-ai-codegen',
-            user: { _id: 'u-shihab', displayName: 'Shihab (AI Lead)' },
-            aiExplanation: 'This endpoint streams Server-Sent Events (SSE) from OpenAI GPT-4o-mini directly to the client.\n\nKey highlights:\n1. Low memory footprint via asynchronous iteration over the OpenAI stream.\n2. Keep-alive connection with chunked transfer encoding avoids timeout on long generations.\n3. Standard [DONE] terminator signal for client stream completion.',
-            createdAt: new Date(Date.now() - 900000).toISOString(),
-        }
-    ],
-    'ch-architecture': [
-        {
-            _id: 'msg-seed-6',
-            content: 'Our WebSocket architecture handles 50,000 concurrent socket connections per cluster with Redis pub/sub backplanes.',
-            type: 'text',
-            channel: 'ch-architecture',
-            user: { _id: 'u-alex', displayName: 'Alex (Staff Eng)' },
-            createdAt: new Date(Date.now() - 600000).toISOString(),
-        }
-    ]
-};
+function byCreatedAt(a: Message, b: Message) {
+    return a.createdAt.localeCompare(b.createdAt);
+}
 
 export default function WorkspacePage() {
     const router = useRouter();
     const params = useParams<{ workspaceId: string }>();
     const workspaceId = params?.workspaceId as string;
 
-    const isDemoWorkspace = workspaceId === 'demo-workspace';
-
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
     const [channels, setChannels] = useState<Channel[]>([]);
     const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
-    const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([
-        { displayName: 'Alex (Staff Eng)' },
-        { displayName: 'Sarah (Founding Eng)' },
-        { displayName: 'Shihab (AI Lead)' }
-    ]);
-    const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
-    const [socket, setSocket] = useState<Socket | null>(null);
-    const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'reconnecting' | 'connecting'>('connected');
     const [loadingMessages, setLoadingMessages] = useState<boolean>(true);
     const [initialLoading, setInitialLoading] = useState<boolean>(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
     const [showAISettings, setShowAISettings] = useState<boolean>(false);
     const [hasKey, setHasKey] = useState<boolean>(false);
-    const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-    const pendingTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    const messagesRef = useRef<Message[]>([]);
+    messagesRef.current = messages;
 
-    // Initialize User & Workspace
+    // Session, workspace and channels
     useEffect(() => {
-        const token = localStorage.getItem('devchat_token');
-
-        if (isDemoWorkspace || !token) {
-            // Setup demo guest session
-            const guestUser: User = {
-                _id: 'user-guest',
-                displayName: 'Guest Developer',
-                email: 'guest@devchat.local',
-                role: 'guest',
-            };
-            setCurrentUser(guestUser);
-            setWorkspace({
-                _id: 'demo-workspace',
-                name: 'Demo Engineering Team',
-                inviteCode: 'devchat-demo-2026',
-            });
-            setChannels(DEMO_CHANNELS);
-            setActiveChannel(DEMO_CHANNELS[0]);
-            setInitialLoading(false);
-            return;
-        }
-
-        api.token = token;
-        api.getMe()
-            .then((data) => {
-                setCurrentUser(data.user || null);
-                setHasKey(Boolean(data.hasOpenaiKey));
-            })
-            .catch(() => {
-                // If getMe fails, fallback gracefully to demo workspace
-                console.warn('Authentication check failed; falling back to demo session.');
-                const guestUser: User = {
-                    _id: 'user-guest',
-                    displayName: 'Guest Developer',
-                    email: 'guest@devchat.local',
-                    role: 'guest',
-                };
-                setCurrentUser(guestUser);
-                setWorkspace({
-                    _id: 'demo-workspace',
-                    name: 'Demo Engineering Team',
-                    inviteCode: 'devchat-demo-2026',
-                });
-                setChannels(DEMO_CHANNELS);
-                setActiveChannel(DEMO_CHANNELS[0]);
-                setInitialLoading(false);
-            });
-    }, [isDemoWorkspace]);
-
-    // Load Workspace & Channels for real users
-    useEffect(() => {
-        if (!currentUser || isDemoWorkspace || !workspaceId) return;
-
-        const loadWorkspace = async () => {
+        let cancelled = false;
+        (async () => {
             try {
-                const ws = await api.getWorkspace(workspaceId);
+                const user = await data.getCurrentUser();
+                if (!user) {
+                    router.replace('/');
+                    return;
+                }
+                const ws = await data.getWorkspace(workspaceId);
+                if (cancelled) return;
+                setCurrentUser(user);
+                if (!ws) {
+                    setLoadError("This workspace doesn't exist, or you're not a member of it.");
+                    return;
+                }
+                const chs = await data.listChannels(workspaceId);
+                if (cancelled) return;
                 setWorkspace(ws);
-                const chs = await api.getChannels(workspaceId);
                 setChannels(chs);
-                if (chs.length > 0) setActiveChannel(chs[0]);
-                setInitialLoading(false);
+                getKeyInfo().then((k) => setHasKey(k.hasKey)).catch(() => {/* AI is optional */});
+                setActiveChannel(chs.find((c) => c.name === 'general') ?? chs[0] ?? null);
             } catch (err) {
-                console.warn('Failed to load workspace from backend, falling back to demo data:', err);
-                setWorkspace({
-                    _id: workspaceId,
-                    name: 'Engineering Workspace',
-                    inviteCode: 'devchat-2026',
-                });
-                setChannels(DEMO_CHANNELS);
-                setActiveChannel(DEMO_CHANNELS[0]);
-                setInitialLoading(false);
+                if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load workspace.');
+            } finally {
+                if (!cancelled) setInitialLoading(false);
             }
-        };
-        loadWorkspace();
-    }, [currentUser, workspaceId, isDemoWorkspace]);
+        })();
+        return () => { cancelled = true; };
+    }, [workspaceId, router]);
 
-    // Socket Lifecycle
-    useEffect(() => {
-        if (!currentUser || isDemoWorkspace || !workspaceId) return;
-
-        const s = connectSocket();
-        if (!s) return;
-
-        const onConnect = () => {
-            setConnectionState('connected');
-            s.emit('joinWorkspace', workspaceId);
-        };
-        const onDisconnect = () => setConnectionState('disconnected');
-        const onReconnecting = () => setConnectionState('reconnecting');
-        const onReconnect = () => {
-            setConnectionState('connected');
-            s.emit('joinWorkspace', workspaceId);
-        };
-
-        s.on('connect', onConnect);
-        s.on('disconnect', onDisconnect);
-        s.io.on('reconnect_attempt', onReconnecting);
-        s.io.on('reconnect', onReconnect);
-
-        s.on('onlineUsers', (users: OnlineUser[]) => setOnlineUsers(users));
-        s.on('newMessage', (msg: Message) => {
-            setMessages((prev) => {
-                if (msg._tempId) {
-                    const idx = prev.findIndex((m) => m._id === msg._tempId);
-                    if (idx >= 0) {
-                        const next = prev.slice();
-                        const { _tempId, ...clean } = msg;
-                        next[idx] = clean;
-                        return next;
-                    }
-                }
-                if (prev.find((m) => m._id === msg._id)) return prev;
-                return [...prev, msg];
-            });
-
-            if (msg._tempId && pendingTimers.current.has(msg._tempId)) {
-                const t = pendingTimers.current.get(msg._tempId);
-                if (t) clearTimeout(t);
-                pendingTimers.current.delete(msg._tempId);
-            }
-        });
-
-        s.on('userTyping', (data: TypingUser) => {
-            setTypingUsers((prev) => {
-                if (prev.find((u) => u.userId === data.userId)) return prev;
-                return [...prev, data];
-            });
-        });
-
-        s.on('userStopTyping', (data: { userId: string }) => {
-            setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
-        });
-
-        s.on('error', (err: { code?: string }) => {
-            if (err.code === 'FORBIDDEN') router.push('/');
-        });
-
-        s.connect();
-        setSocket(s);
-
-        return () => {
-            s.off('connect', onConnect);
-            s.off('disconnect', onDisconnect);
-            s.io.off('reconnect_attempt', onReconnecting);
-            s.io.off('reconnect', onReconnect);
-            s.off('onlineUsers');
-            s.off('newMessage');
-            s.off('userTyping');
-            s.off('userStopTyping');
-            s.off('error');
-            disconnectSocket();
-        };
-    }, [currentUser, workspaceId, isDemoWorkspace, router]);
-
-    // Channel Switch & Messages
+    // Messages for the active channel
     useEffect(() => {
         if (!activeChannel) return;
+        let cancelled = false;
         setLoadingMessages(true);
+        setMessages([]);
+        data.listRecentMessages(activeChannel.id)
+            .then((msgs) => { if (!cancelled) setMessages(msgs); })
+            .catch((err) => { if (!cancelled) setLoadError(err.message); })
+            .finally(() => { if (!cancelled) setLoadingMessages(false); });
+        return () => { cancelled = true; };
+    }, [activeChannel]);
 
-        if (isDemoWorkspace || activeChannel._id.startsWith('ch-')) {
-            const seed = DEMO_SEED_MESSAGES[activeChannel._id] || [];
-            setMessages(seed);
-            setLoadingMessages(false);
-            return;
-        }
-
-        if (typeof window !== 'undefined') {
-            const cached = sessionStorage.getItem(`devchat_demo_messages_${activeChannel._id}`);
-            if (cached) {
-                try {
-                    const parsed = JSON.parse(cached);
-                    setMessages(parsed);
-                    setLoadingMessages(false);
-                    if (socket) socket.emit('joinChannel', activeChannel._id);
-                    return () => {
-                        if (socket) socket.emit('leaveChannel', activeChannel._id);
-                    };
-                } catch {
-                    sessionStorage.removeItem(`devchat_demo_messages_${activeChannel._id}`);
-                }
+    // Live updates
+    const upsertMessage = useCallback((msg: Message) => {
+        setMessages((prev) => {
+            if (msg.channelId !== activeChannel?.id) return prev;
+            const idx = prev.findIndex((m) => m.id === msg.id);
+            if (idx >= 0) {
+                const next = prev.slice();
+                next[idx] = msg;
+                return next;
             }
+            return [...prev, msg].sort(byCreatedAt);
+        });
+    }, [activeChannel]);
+
+    const refetchMessage = useCallback(async (id: string) => {
+        try {
+            const msg = await data.getMessage(id);
+            if (msg) upsertMessage(msg);
+        } catch {/* next load will catch up */}
+    }, [upsertMessage]);
+
+    const onlineUsers = useWorkspacePresence(workspace?.id ?? null, currentUser);
+    const { typingUsers, connection, sendTyping } = useChannelRealtime(activeChannel?.id ?? null, currentUser, {
+        onMessageInserted: (id) => {
+            // Our own sends are already in the list via the insert response.
+            if (!messagesRef.current.some((m) => m.id === id)) refetchMessage(id);
+        },
+        onMessageUpdated: refetchMessage,
+        onMessageDeleted: (id) => setMessages((prev) => prev.filter((m) => m.id !== id)),
+    });
+
+    // Sending, with an optimistic placeholder until the insert returns
+    const deliver = useCallback(async (placeholder: Message) => {
+        setMessages((prev) => [...prev, placeholder]);
+        try {
+            const saved = await data.sendMessage(
+                placeholder.channelId, currentUser!.id, placeholder.content, placeholder.type, placeholder.language);
+            setMessages((prev) => {
+                const withoutTemp = prev.filter((m) => m.id !== placeholder.id);
+                return withoutTemp.some((m) => m.id === saved.id) ? withoutTemp : [...withoutTemp, saved].sort(byCreatedAt);
+            });
+        } catch (err) {
+            setMessages((prev) => prev.map((m) => m.id === placeholder.id
+                ? { ...m, _pending: false, _failed: true, _error: err instanceof Error ? err.message : 'Failed to send' }
+                : m));
         }
+    }, [currentUser]);
 
-        if (socket) socket.emit('joinChannel', activeChannel._id);
-        api.getMessages(activeChannel._id)
-            .then((data) => setMessages(data.messages))
-            .catch(() => {
-                // Fallback to seed messages if backend channel fails
-                setMessages(DEMO_SEED_MESSAGES['ch-general'] || []);
-            })
-            .finally(() => setLoadingMessages(false));
-
-        return () => {
-            if (socket) socket.emit('leaveChannel', activeChannel._id);
-        };
-    }, [activeChannel, socket, isDemoWorkspace]);
-
-    // Send Message Handler (with optimistic insert and demo echo)
-    const handleSendMessage = useCallback((content: string, type?: string, language?: string) => {
-        if (!activeChannel) return;
-        const tempId = TEMP_ID();
-
-        const optimistic: Message = {
-            _id: tempId,
-            _pending: !isDemoWorkspace,
-            content,
-            type: type || 'text',
-            language: language || '',
-            channel: activeChannel._id,
-            user: {
-                _id: currentUser?._id,
-                displayName: currentUser?.displayName || 'You',
-                avatar: currentUser?.avatar,
-            },
-            createdAt: new Date().toISOString(),
-        };
-
-        setMessages((prev) => [...prev, optimistic]);
-
-        if (isDemoWorkspace) {
-            // Simulated interactive reply in demo mode
-            if (type === 'code') {
-                setTimeout(() => {
-                    const botReply: Message = {
-                        _id: `reply-${Date.now()}`,
-                        content: `Nice snippet in ${language || 'code'}! Click "Explain Code" to see the AI breakdown.`,
-                        type: 'text',
-                        channel: activeChannel._id,
-                        user: { _id: 'u-bot', displayName: 'DevChat Bot' },
-                        createdAt: new Date().toISOString(),
-                    };
-                    setMessages((prev) => [...prev, botReply]);
-                }, 1000);
-            }
-            return;
-        }
-
-        if (!socket) return;
-
-        const timer = setTimeout(() => {
-            setMessages((prev) => prev.map((m) =>
-                m._id === tempId ? { ...m, _failed: true, _pending: false } : m
-            ));
-            pendingTimers.current.delete(tempId);
-        }, 6000);
-        pendingTimers.current.set(tempId, timer);
-
-        socket.emit('sendMessage', {
+    const handleSendMessage = useCallback((content: string, type: MessageType = 'text', language = '') => {
+        if (!activeChannel || !currentUser) return;
+        sendTyping(false);
+        deliver({
+            id: tempId(),
+            channelId: activeChannel.id,
             content,
             type,
-            language: language || '',
-            channelId: activeChannel._id,
-            _tempId: tempId,
+            language,
+            user: currentUser,
+            createdAt: new Date().toISOString(),
+            _pending: true,
         });
-    }, [socket, activeChannel, currentUser, isDemoWorkspace]);
+    }, [activeChannel, currentUser, deliver, sendTyping]);
 
-    const handleRetry = useCallback((failedMsg: Message) => {
-        setMessages((prev) => prev.filter((m) => m._id !== failedMsg._id));
-        if (socket && activeChannel) {
-            const tempId = TEMP_ID();
-            const optimistic: Message = {
-                _id: tempId,
-                _pending: true,
-                content: failedMsg.content,
-                type: failedMsg.type,
-                language: failedMsg.language,
-                channel: activeChannel._id,
-                user: {
-                    _id: currentUser?._id,
-                    displayName: currentUser?.displayName,
-                    avatar: currentUser?.avatar,
-                },
-                createdAt: new Date().toISOString(),
-            };
-            setMessages((prev) => [...prev, optimistic]);
-
-            const timer = setTimeout(() => {
-                setMessages((prev) => prev.map((m) =>
-                    m._id === tempId ? { ...m, _failed: true, _pending: false } : m
-                ));
-                pendingTimers.current.delete(tempId);
-            }, 6000);
-            pendingTimers.current.set(tempId, timer);
-
-            socket.emit('sendMessage', {
-                content: failedMsg.content,
-                type: failedMsg.type,
-                language: failedMsg.language,
-                channelId: activeChannel._id,
-                _tempId: tempId,
-            });
-        }
-    }, [socket, activeChannel, currentUser]);
-
-    const handleTyping = useCallback(() => {
-        if (!socket || !activeChannel || isDemoWorkspace) return;
-        socket.emit('typing', activeChannel._id);
-    }, [socket, activeChannel, isDemoWorkspace]);
-
-    const handleStopTyping = useCallback(() => {
-        if (!socket || !activeChannel || isDemoWorkspace) return;
-        socket.emit('stopTyping', activeChannel._id);
-    }, [socket, activeChannel, isDemoWorkspace]);
+    const handleRetry = useCallback((failed: Message) => {
+        setMessages((prev) => prev.filter((m) => m.id !== failed.id));
+        deliver({ ...failed, id: tempId(), createdAt: new Date().toISOString(), _failed: false, _error: undefined, _pending: true });
+    }, [deliver]);
 
     const handleCreateChannel = useCallback(async (name: string) => {
-        if (isDemoWorkspace) {
-            const newCh: Channel = { _id: `ch-${Date.now()}`, name };
-            setChannels((prev) => [...prev, newCh]);
-            setActiveChannel(newCh);
-            setSidebarOpen(false);
-            return;
-        }
+        if (!workspace || !currentUser) return;
         try {
-            const channel = await api.createChannel(workspaceId, name);
+            const channel = await data.createChannel(workspace.id, currentUser.id, name);
             setChannels((prev) => [...prev, channel]);
             setActiveChannel(channel);
             setSidebarOpen(false);
         } catch (err) {
-            console.error('Failed to create channel:', err);
+            window.alert(err instanceof Error ? err.message : 'Failed to create channel');
         }
-    }, [workspaceId, isDemoWorkspace]);
+    }, [workspace, currentUser]);
 
     const handleSelectChannel = useCallback((channel: Channel) => {
         setActiveChannel(channel);
         setSidebarOpen(false);
     }, []);
 
-    const handleMissingKey = useCallback(() => {
-        setShowAISettings(true);
-    }, []);
-
-    const handleLogout = useCallback(() => {
-        api.clearToken();
-        disconnectSocket();
-        localStorage.removeItem('devchat_demo_mode');
+    const handleLogout = useCallback(async () => {
+        await data.signOut();
         router.push('/');
     }, [router]);
+
+    const isDemo = Boolean(currentUser?.isGuest);
 
     if (initialLoading) {
         return (
@@ -464,21 +190,30 @@ export default function WorkspacePage() {
         );
     }
 
+    if (loadError && !workspace) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-black px-4 text-center">
+                <div className="max-w-sm">
+                    <p className="text-sm text-[#ededed] mb-4">{loadError}</p>
+                    <Link href="/" className="text-xs font-mono text-[#52a8ff] hover:underline">← Back to DevChat</Link>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <ErrorBoundary>
             <div className="flex h-screen bg-black text-[#ededed] overflow-hidden">
-                {/* Connection Alert Banner */}
-                {connectionState !== 'connected' && !isDemoWorkspace && (
+                {connection !== 'connected' && activeChannel && (
                     <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-1.5 text-center text-xs font-mono font-medium text-white ${
-                        connectionState === 'disconnected' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'
+                        connection === 'disconnected' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'
                     }`}>
-                        {connectionState === 'connecting' && 'Connecting to WebSocket mesh…'}
-                        {connectionState === 'reconnecting' && 'Reconnecting… messages will sync once back online.'}
-                        {connectionState === 'disconnected' && 'Disconnected. Attempting auto-reconnect…'}
+                        {connection === 'connecting' && 'Connecting…'}
+                        {connection === 'reconnecting' && 'Reconnecting… messages will sync once back online.'}
+                        {connection === 'disconnected' && 'Live updates are offline. Refresh the page to reconnect.'}
                     </div>
                 )}
 
-                {/* Mobile Backdrop */}
                 {sidebarOpen && (
                     <button
                         type="button"
@@ -488,7 +223,6 @@ export default function WorkspacePage() {
                     />
                 )}
 
-                {/* Sidebar */}
                 <div className={`fixed md:static z-40 h-full transition-transform duration-200 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                 } md:translate-x-0`}>
@@ -503,13 +237,11 @@ export default function WorkspacePage() {
                         onLogout={handleLogout}
                         onOpenAISettings={() => setShowAISettings(true)}
                         hasOpenaiKey={hasKey}
-                        isDemo={isDemoWorkspace}
+                        isDemo={isDemo}
                     />
                 </div>
 
-                {/* Main Chat Area */}
                 <div className="flex-1 flex flex-col min-w-0 bg-black">
-                    {/* Mobile Header */}
                     <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#1f1f1f] bg-[#0a0a0a]">
                         <div className="flex items-center gap-2">
                             <button
@@ -524,7 +256,7 @@ export default function WorkspacePage() {
                                 {activeChannel?.name || 'general'}
                             </span>
                         </div>
-                        {isDemoWorkspace && (
+                        {isDemo && (
                             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#52a8ff]/10 text-[#52a8ff] border border-[#52a8ff]/20">
                                 Demo Mode
                             </span>
@@ -536,26 +268,24 @@ export default function WorkspacePage() {
                         channel={activeChannel}
                         currentUser={currentUser}
                         typingUsers={typingUsers}
-                        onExplain={undefined}
-                        onMissingKey={handleMissingKey}
                         onRetry={handleRetry}
+                        onMissingKey={() => setShowAISettings(true)}
                         loading={loadingMessages}
-                        isDemo={isDemoWorkspace}
+                        isDemo={isDemo}
                     />
 
                     <MessageInput
                         onSend={handleSendMessage}
-                        onTyping={handleTyping}
-                        onStopTyping={handleStopTyping}
-                        disabled={connectionState === 'disconnected' && !isDemoWorkspace}
+                        onTyping={() => sendTyping(true)}
+                        onStopTyping={() => sendTyping(false)}
+                        disabled={!activeChannel}
                     />
                 </div>
 
-                {/* AI Settings Modal */}
                 <AISettings
                     open={showAISettings}
                     onClose={() => setShowAISettings(false)}
-                    onChange={(info) => setHasKey(Boolean(info?.hasKey))}
+                    onChange={(info) => setHasKey(info.hasKey)}
                 />
             </div>
         </ErrorBoundary>
