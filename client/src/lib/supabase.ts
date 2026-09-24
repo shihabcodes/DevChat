@@ -13,3 +13,8 @@ if (!url || !key) {
 // Browser client. The session lives in localStorage and is refreshed
 // automatically; all access control is enforced by RLS in the database.
 export const supabase = createClient<Database>(url, key);
+
+// Dev-only handle for debugging realtime from the browser console.
+if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
+    (window as unknown as { __supabase: typeof supabase }).__supabase = supabase;
+}
