@@ -112,6 +112,18 @@ export default function WorkspacePage() {
         },
         onMessageUpdated: refetchMessage,
         onMessageDeleted: (id) => setMessages((prev) => prev.filter((m) => m.id !== id)),
+        onResync: () => {
+            const channelId = activeChannel?.id;
+            if (!channelId) return;
+            data.listRecentMessages(channelId).then((fresh) => {
+                setMessages((prev) => {
+                    if (prev.some((m) => m.channelId !== channelId)) return prev;
+                    // Keep unsent/failed placeholders; everything else comes from the server.
+                    const local = prev.filter((m) => m._pending || m._failed);
+                    return [...fresh, ...local].sort(byCreatedAt);
+                });
+            }).catch(() => {/* next reconnect will try again */});
+        },
     });
 
     // Sending, with an optimistic placeholder until the insert returns
