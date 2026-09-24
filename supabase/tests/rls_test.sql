@@ -155,6 +155,12 @@ begin
     perform pg_temp.ok('outsider: can NOT see stranger profile', (select count(*) from public.profiles where id = alice) = 0);
     perform pg_temp.ok('outsider: can NOT read AI explanations',
         (select count(*) from public.message_explanations e join public.messages m on m.id = e.message_id where m.channel_id = ch) = 0);
+    begin
+        perform count(*) from public.user_ai_keys;
+        perform pg_temp.ok('users can NOT read stored AI keys', false);
+    exception when insufficient_privilege then
+        perform pg_temp.ok('users can NOT read stored AI keys', true);
+    end;
     perform pg_temp.ok('realtime: outsider blocked from workspace topic',
         not private.can_use_realtime_topic('workspace:' || ws));
     perform pg_temp.ok('realtime: outsider blocked from channel topic',

@@ -10,6 +10,7 @@ export interface ChatAreaProps {
     currentUser: User | null;
     typingUsers?: TypingUser[];
     onRetry?: (message: Message) => void;
+    onMissingKey?: () => void;
     loading?: boolean;
     isDemo?: boolean;
 }
@@ -20,6 +21,7 @@ export default function ChatArea({
     currentUser,
     typingUsers,
     onRetry,
+    onMissingKey,
     loading,
     isDemo,
 }: ChatAreaProps) {
@@ -88,6 +90,7 @@ export default function ChatArea({
                             message={msg}
                             isOwn={msg.user?.id === currentUser?.id}
                             onRetry={onRetry}
+                            onMissingKey={onMissingKey}
                         />
                     ))
                 )}

@@ -10,12 +10,14 @@ export interface MessageBubbleProps {
     message: Message;
     isOwn: boolean;
     onRetry?: (message: Message) => void;
+    onMissingKey?: () => void;
 }
 
 export default function MessageBubble({
     message,
     isOwn,
     onRetry,
+    onMissingKey,
 }: MessageBubbleProps) {
     const date = message.createdAt ? new Date(message.createdAt) : new Date();
     const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -75,7 +77,9 @@ export default function MessageBubble({
                     <CodeBlock
                         code={message.content || ''}
                         language={message.language}
+                        messageId={message.id}
                         cachedExplanation={message.aiExplanation}
+                        onMissingKey={onMissingKey}
                     />
                 ) : (
                     <div className="text-xs text-[#d4d4d8] leading-relaxed break-words prose prose-invert max-w-none [&_p]:mb-1 [&_p:last-child]:mb-0 [&_a]:text-[#52a8ff] [&_a]:underline [&_code]:font-mono [&_code]:bg-[#18181b] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[#52a8ff] [&_code]:border [&_code]:border-white/[0.08] [&_code]:text-[11px] [&_ul]:pl-4 [&_ol]:pl-4">
