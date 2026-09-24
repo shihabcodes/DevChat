@@ -11,7 +11,7 @@ const LANGUAGES = [
 ];
 
 export interface MessageInputProps {
-    onSend: (content: string, type?: string, language?: string) => void;
+    onSend: (content: string, type?: 'text' | 'code', language?: string) => void;
     onTyping?: () => void;
     onStopTyping?: () => void;
     disabled?: boolean;

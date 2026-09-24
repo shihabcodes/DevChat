@@ -1,39 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 
-import api, { ApiError } from '@/lib/api';
 import { highlightCode } from '@/lib/highlight';
 
 export interface CodeBlockProps {
     code: string;
     language?: string;
-    messageId?: string;
-    onMissingKey?: () => void;
-    cachedExplanation?: string;
-    isDemo?: boolean;
+    cachedExplanation?: string | null;
 }
 
-export default function CodeBlock({
-    code,
-    language,
-    messageId,
-    onMissingKey,
-    cachedExplanation,
-    isDemo,
-}: CodeBlockProps) {
+export default function CodeBlock({ code, language, cachedExplanation }: CodeBlockProps) {
     const [copied, setCopied] = useState<boolean>(false);
-    const [explaining, setExplaining] = useState<boolean>(false);
-    const [explanation, setExplanation] = useState<string | null>(cachedExplanation || null);
+    const explaining = false;
+    const explanation = cachedExplanation || null;
     const [showExplain, setShowExplain] = useState<boolean>(Boolean(cachedExplanation));
     const [html, setHtml] = useState<string | null>(null);
-    const [needsKey, setNeedsKey] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
-    const streamRef = useRef<{ cancel: () => void; result: Promise<{ text: string }> } | null>(null);
-    const cancelledRef = useRef<boolean>(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -52,75 +38,11 @@ export default function CodeBlock({
         } catch {/* ignore */}
     };
 
-    const handleExplain = async () => {
-        if (explanation) {
-            setShowExplain((v) => !v);
-            return;
-        }
-
-        if (!showExplain) setShowExplain(true);
-        if (explaining) return;
-
-        setExplaining(true);
-        setError(null);
-        setNeedsKey(false);
-        setExplanation('');
-        cancelledRef.current = false;
-
-        // If in demo mode or offline, simulate streaming explanation
-        if (isDemo || !messageId || messageId.startsWith('msg-seed-')) {
-            const simulatedText = `Analysis of this ${language || 'code'} block:\n\n1. Purpose: Implements high-throughput operations with deterministic resource bounds.\n2. Concurrency: Thread-safe data structures prevent data races across worker threads.\n3. Performance: Zero-allocation hot path optimizes cache locality.`;
-            let idx = 0;
-            const timer = setInterval(() => {
-                idx += 5;
-                if (cancelledRef.current) {
-                    clearInterval(timer);
-                    return;
-                }
-                if (idx >= simulatedText.length) {
-                    setExplanation(simulatedText);
-                    setExplaining(false);
-                    clearInterval(timer);
-                } else {
-                    setExplanation(simulatedText.slice(0, idx));
-                }
-            }, 25);
-            return;
-        }
-
-        try {
-            const stream = api.explainCodeStream({
-                messageId,
-                code,
-                language,
-                onDelta: (_delta: string, full: string) => setExplanation(full),
-            });
-            streamRef.current = stream;
-            const { text } = await stream.result;
-            if (cancelledRef.current) return;
-            if (text) setExplanation(text);
-            setExplaining(false);
-        } catch (err: any) {
-            if (cancelledRef.current) return;
-            setExplaining(false);
-            if (err instanceof ApiError && err.code === 'NO_OPENAI_KEY') {
-                setNeedsKey(true);
-                if (onMissingKey) onMissingKey();
-            } else {
-                setError(err.message || 'Failed to generate explanation');
-            }
-        } finally {
-            streamRef.current = null;
-        }
+    // TODO(ai-route): stream from the new /api/ai/explain route once it exists.
+    const handleExplain = () => {
+        if (!explanation) setError('AI explanations are being rebuilt and will be back shortly.');
+        setShowExplain((v) => !v);
     };
-
-    useEffect(() => () => {
-        cancelledRef.current = true;
-        if (streamRef.current) {
-            streamRef.current.cancel();
-            streamRef.current = null;
-        }
-    }, []);
 
     return (
         <div className="mt-1.5 w-full font-sans">
@@ -191,12 +113,6 @@ export default function CodeBlock({
                             ✕
                         </button>
                     </div>
-
-                    {needsKey && (
-                        <div className="p-2 rounded bg-[#f59e0b]/10 border border-[#f59e0b]/30 text-[#fcd34d] mb-2 text-xs">
-                            No OpenAI key configured. Open AI Settings in the sidebar to add your key.
-                        </div>
-                    )}
 
                     {error && (
                         <div className="p-2 rounded bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] mb-2 text-xs">

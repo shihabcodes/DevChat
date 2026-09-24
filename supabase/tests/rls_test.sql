@@ -123,9 +123,11 @@ begin
     end;
 
     perform pg_temp.ok('realtime: member may join channel topic',
-        private.can_use_channel_topic('channel:' || ch));
+        private.can_use_realtime_topic('channel:' || ch));
+    perform pg_temp.ok('realtime: member may join workspace topic',
+        private.can_use_realtime_topic('workspace:' || ws));
     perform pg_temp.ok('realtime: malformed topic rejected',
-        not private.can_use_channel_topic('channel:not-a-uuid'));
+        not private.can_use_realtime_topic('channel:not-a-uuid'));
 
     -- Rate limit: bob already sent 1; 10 more should trip the 10-per-10s cap.
     begin
@@ -153,8 +155,10 @@ begin
     perform pg_temp.ok('outsider: can NOT see stranger profile', (select count(*) from public.profiles where id = alice) = 0);
     perform pg_temp.ok('outsider: can NOT read AI explanations',
         (select count(*) from public.message_explanations e join public.messages m on m.id = e.message_id where m.channel_id = ch) = 0);
+    perform pg_temp.ok('realtime: outsider blocked from workspace topic',
+        not private.can_use_realtime_topic('workspace:' || ws));
     perform pg_temp.ok('realtime: outsider blocked from channel topic',
-        not private.can_use_channel_topic('channel:' || ch));
+        not private.can_use_realtime_topic('channel:' || ch));
     begin
         insert into public.messages (channel_id, user_id, content) values (ch, auth.uid(), 'intruder');
         perform pg_temp.ok('outsider: can NOT post into channel', false);
