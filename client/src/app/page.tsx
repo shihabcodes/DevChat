@@ -261,7 +261,7 @@ export default function Home() {
 
                         {/* Editorial Typography: Modern Sans + Italic Serif (2 Clean Lines) */}
                         <h1 className="text-4xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-white leading-[1.06]">
-                            Developer chat that<br className="hidden sm:block" />
+                            Developer chat that{' '}<br className="hidden sm:block" />
                             never{' '}
                             <span className="font-editorial italic font-normal text-white text-[1.14em]">
                                 loses flow.
