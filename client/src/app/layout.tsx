@@ -3,7 +3,8 @@ import React from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './globals.css';
 
-const siteUrl: string = process.env.NEXT_PUBLIC_SITE_URL || 'https://devchat.app';
+const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+const siteUrl: string = process.env.NEXT_PUBLIC_SITE_URL || 'https://dev-chat-virid.vercel.app';
 
 export const metadata: Metadata = {
     metadataBase: new URL(siteUrl),
@@ -12,17 +13,19 @@ export const metadata: Metadata = {
         template: '%s · DevChat',
     },
     description:
-        'Real-time chat built for developer flow. Share code with syntax highlighting across 20+ languages, stream AI explanations in-line, and collaborate in sub-50ms channels.',
+        'Real-time chat for developers. Share syntax-highlighted code, stream AI explanations in-line, and collaborate in live channels. Built with Next.js and Supabase.',
     keywords: [
         'developer chat',
         'code sharing',
         'AI code explanation',
         'real-time messaging',
         'OpenAI',
+        'Supabase',
+        'Next.js',
         'syntax highlighting',
     ],
-    authors: [{ name: 'DevChat' }],
-    creator: 'DevChat',
+    authors: [{ name: 'Shihab', url: 'https://github.com/shihabcodes' }],
+    creator: 'Shihab',
     openGraph: {
         type: 'website',
         locale: 'en_US',
@@ -61,9 +64,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 />
             </head>
             <body style={{ fontFamily: "'Geist', 'Inter', sans-serif" }} suppressHydrationWarning>
-                <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>
-                    {children}
-                </GoogleOAuthProvider>
+                {googleClientId ? (
+                    <GoogleOAuthProvider clientId={googleClientId}>{children}</GoogleOAuthProvider>
+                ) : (
+                    children
+                )}
             </body>
         </html>
     );
