@@ -1,138 +1,127 @@
 <div align="center">
 
-# DevChat : Real-Time Developer Chat
+# DevChat
 
-**Real-time chat built for developers. Share code with syntax highlighting, stream AI explanations in-line, collaborate without alt-tabbing to ChatGPT.**
+**Real-time chat for developers, with syntax-highlighted code and in-line AI explanations.**
 
-[🚀 Live Demo](https://dev-chat-virid.vercel.app) · [📚 Deployment Guide](./DEPLOYMENT.md) · [🐛 Report a Bug](https://github.com/shihabcodes/DevChat/issues/new)
+[**Live demo →**](https://dev-chat-virid.vercel.app) &nbsp;·&nbsp; one click, no signup &nbsp;·&nbsp; [Deployment guide](./DEPLOYMENT.md)
 
+[![CI](https://github.com/shihabcodes/DevChat/actions/workflows/ci.yml/badge.svg)](https://github.com/shihabcodes/DevChat/actions/workflows/ci.yml)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)
-![React](https://img.shields.io/badge/React-19-blue?logo=react)
-![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Realtime-3ecf8e?logo=supabase)
-![OpenAI](https://img.shields.io/badge/OpenAI-bring%20your%20own%20key-412991?logo=openai)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Realtime-3ecf8e?logo=supabase&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+
+<img src="docs/images/workspace.jpg" alt="DevChat workspace showing a channel with a syntax-highlighted code message" width="820">
 
 </div>
 
----
+## What it is
+
+Developers paste code into Slack, then copy it into ChatGPT to ask what it does. DevChat puts both in one place. You share code in a channel, it's highlighted properly, and anyone in the channel can click **Explain** to stream an AI breakdown under the snippet. Once explained, the answer is cached, so teammates get it instantly.
+
+**Try it:** open the [live demo](https://dev-chat-virid.vercel.app) and click **Try Demo**. You get a private guest workspace, deleted after 24 hours. Open it in a second window to watch messages, typing indicators and presence sync live.
 
 ## Features
 
-- 💬 **Real-time messaging** with optimistic send, retry, and a reconnect banner
-- ⌨️ **Typing indicators** and 🟢 **who's online** per workspace
-- 🖥️ **Syntax-highlighted code** with Shiki, and a Monaco editor for writing snippets
-- ✨ **AI explanations** streamed in-line. You bring your own OpenAI key, which is encrypted at rest and never sent back to the browser
-- ⚡ **Shared AI cache**: once a snippet is explained, teammates see it instantly and for free
-- 🏢 **Workspaces & channels**, joined with a rotatable invite code
-- 🚀 **One-click demo**: a private guest workspace, no signup, deleted after 24 hours
-- 📱 **Mobile-friendly** sidebar drawer
+- **Real-time channels**: live messages, typing indicators, and who's online, with optimistic sends, retry, and backfill after reconnects
+- **Code as a first-class message**: a Monaco editor for writing snippets, and Shiki highlighting across 20 languages
+- **Streamed AI explanations**: bring your own OpenAI key; answers stream in over SSE and are cached per message
+- **Workspaces & channels**, joined with an invite code that owners can rotate
+- **One-click guest demo** built on anonymous auth, cleaned up automatically by a database cron job
 
-## Tech Stack
+## Architecture
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 15 (App Router) + React 19, Tailwind CSS 4 |
-| Database | Supabase Postgres with row level security on every table |
-| Auth | Supabase Auth: email/password, anonymous guests, optional Google |
-| Real-time | Supabase Realtime: message changes, broadcast (typing), presence (online) |
-| AI | Next.js route handlers on Vercel calling OpenAI, streamed over SSE |
-| Hosting | Vercel (app) + Supabase (database, auth, realtime), both on free tiers |
+```mermaid
+flowchart LR
+    B[Browser<br/>Next.js + React] -- "queries & writes<br/>(as the signed-in user)" --> PG[(Supabase Postgres<br/>row level security)]
+    B -- "live messages, typing,<br/>presence (WebSocket)" --> RT[Supabase Realtime]
+    RT -- "change feed, filtered by RLS" --> PG
+    B -- "Explain (SSE)" --> API[Next.js route handlers<br/>on Vercel]
+    API -- "read message as the user;<br/>write cache as the server" --> PG
+    API -- "user's own key" --> OAI[OpenAI]
+```
 
-There is no separate backend server. The browser talks to Supabase directly, and the database decides what each user may read or write. The only server code is the two AI routes, which need secrets.
+There's no custom backend server. The browser talks to Supabase directly, and **Postgres row level security is the authorization layer**. The only server code is two route handlers for the AI feature, because they need secrets.
 
-## Quick Start
+## Engineering highlights
 
-### Prerequisites
-- Node.js 20+
-- A free [Supabase](https://supabase.com) project
-- The [Supabase CLI](https://supabase.com/docs/guides/cli) (`brew install supabase/tap/supabase`)
+**Authorization lives in the database.** Every table has RLS policies built on one rule: you can see a workspace's channels, messages, members and AI answers only if you're a member. Helper functions live in a non-exposed `private` schema, and multi-row writes (create workspace, join by invite) are `SECURITY DEFINER` RPCs. Column-level grants stop users from editing anything but the fields they should, such as a message's content but not its author or channel.
 
-### 1. Install
+**Policies are tested, not assumed.** [`supabase/tests/rls_test.sql`](./supabase/tests/rls_test.sql) creates throwaway users (an owner, a member, and an outsider), attempts 35 allowed and forbidden actions against the real project, and cleans up after itself. For example: outsiders reading messages, members promoting themselves, planting fake AI answers, and reading stored API keys.
+
+**Realtime without a socket server.** Messages come from Postgres change feeds, and typing and presence use Realtime broadcast and presence. All topics are private, and access is gated by the same membership check as the tables. When a subscription drops and recovers, the client backfills the channel so nothing sent during the gap is lost.
+
+**AI with the user's key, safely.**
+- The key is verified with OpenAI, encrypted with AES-256-GCM on the server, and never returned to the browser.
+- The explain route reads the message *as the requesting user*, so RLS blocks anyone outside the workspace.
+- Only the server can write the explanation cache.
+- Each user is limited to 30 explanations per hour.
+
+**Abuse limits in the right layer.** Message spam is capped at 10 per 10 seconds by a Postgres trigger. Sign-ups and guest sign-ins use Supabase's per-IP limits. A `pg_cron` job purges demo guests and everything they created.
+
+## Tech stack
+
+| | |
+|---|---|
+| **App** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 4 |
+| **Data & auth** | Supabase: Postgres, Auth (email, anonymous), Realtime, pg_cron |
+| **AI** | OpenAI via Next.js route handlers, streamed with Server-Sent Events |
+| **Code** | Shiki for highlighting, Monaco for editing |
+| **Hosting** | Vercel + Supabase, both on free tiers |
+| **CI** | GitHub Actions (type check + build), CodeQL |
+
+## Running locally
 
 ```bash
 git clone https://github.com/shihabcodes/DevChat.git
-cd DevChat/client && npm install
-```
+cd DevChat
 
-### 2. Set up the database
-
-```bash
-cd ..                       # repo root
+# 1. Database: link your Supabase project and apply migrations
 supabase login
 supabase link --project-ref <your-project-ref>
-supabase db push            # applies supabase/migrations
+supabase db push
+
+# 2. App
+cd client
+cp .env.example .env.local   # fill in the values described inside
+npm install
+npm run dev                  # http://localhost:3000
 ```
 
-In the Supabase dashboard, under **Authentication**:
-- **Sign In / Providers**: turn on *Allow anonymous sign-ins* (used by the demo)
-- **URL Configuration**: Site URL `http://localhost:3000`, and add your production URL to Redirect URLs
+In Supabase → Authentication, turn on **anonymous sign-ins** so the demo works. [DEPLOYMENT.md](./DEPLOYMENT.md) has the full setup, including Vercel.
 
-### 3. Configure environment
+To check the security policies against your project:
 
 ```bash
-cp client/.env.example client/.env.local
+supabase db query --linked -f supabase/tests/rls_test.sql   # every row should say pass = true
 ```
 
-Fill in `client/.env.local`:
-
-| Variable | Where it comes from | Secret? |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API Keys | No |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Same page, publishable key | No |
-| `SUPABASE_SECRET_KEY` | Same page, **secret** key | **Yes** |
-| `AI_KEY_ENCRYPTION_SECRET` | `openssl rand -base64 48` | **Yes** |
-| `OPENAI_MODEL` | Optional, defaults to `gpt-4o-mini` | No |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Optional, enables Google sign-in | No |
-
-### 4. Run
-
-```bash
-cd client && npm run dev    # → http://localhost:3000
-```
-
-Click **Try Demo** to land in a seeded guest workspace.
-
-### 5. Verify the database rules
-
-```bash
-supabase db query --linked -f supabase/tests/rls_test.sql
-```
-
-Every returned row should have `pass = true`. The test creates throwaway users, tries 35 allowed and forbidden actions (outsiders reading messages, members promoting themselves, planting fake AI answers, and so on), then deletes everything it created.
-
-## Project Structure
+## Project structure
 
 ```
-DevChat/
-├── client/                      # Next.js app (deployed to Vercel)
-│   └── src/
-│       ├── app/                 # Pages: / and /workspace/[id]
-│       │   └── api/ai/          # Server routes: key (BYOK) and explain (SSE)
-│       ├── components/          # Sidebar, ChatArea, MessageBubble, CodeBlock, AISettings
-│       └── lib/
-│           ├── supabase.ts      # Browser client
-│           ├── data.ts          # Data access (auth, workspaces, channels, messages)
-│           ├── realtime.ts      # Live messages, typing, presence hooks
-│           ├── ai.ts            # Browser helpers for the AI routes
-│           └── server/          # Server-only: admin client, auth check, encryption
-├── supabase/
-│   ├── migrations/              # Schema, RLS policies, realtime auth, cron jobs
-│   └── tests/rls_test.sql       # Allow/deny checks for every policy
-├── DEPLOYMENT.md
-└── README.md
+client/                      Next.js app
+  src/app/                   pages (/, /workspace/[id]) and /api/ai route handlers
+  src/components/            chat UI: sidebar, messages, code blocks, input, AI settings
+  src/lib/                   Supabase client, data access, realtime hooks, AI helpers
+  src/lib/server/            server-only code: admin client, auth check, encryption
+supabase/
+  migrations/                schema, RLS policies, realtime authorization, cron jobs
+  tests/rls_test.sql         allow/deny tests for every policy
 ```
 
-## Security
+## Roadmap
 
-- **Row level security everywhere.** Membership in a workspace is the single rule for seeing its channels, messages, members and AI explanations. It's enforced in Postgres, so a bug in the UI can't leak data.
-- **Least privilege.** Anonymous visitors have no table access. Signed-in users can only update specific columns (for example, message content but not its channel or author). `TRUNCATE` is revoked.
-- **Server-only writes where it matters.** AI explanations and stored API keys can only be written by the server, so nobody can plant a fake "AI" answer.
-- **Invite codes** are visible only to workspace owners and admins, and can be rotated.
-- **Abuse limits.** 10 messages per 10 seconds per user (enforced in the database), 30 AI explanations per hour, and Supabase's built-in per-IP limits on sign-ups and guest sign-ins.
-- **Guest cleanup.** A `pg_cron` job deletes demo guests and everything they created after 24 hours.
-- **API keys** are verified with OpenAI, encrypted with AES-256-GCM before storage, and never returned to the browser.
-- **Content Security Policy** only allows network connections to the app itself, Supabase, and Google.
+- [ ] Threads, reactions, and message editing in the UI (the database already supports edits)
+- [ ] Load older messages and full-text search
+- [ ] Google sign-in
+- [ ] A design pass on the chat UI and landing page
+- [ ] End-to-end tests with Playwright
+
+## Author
+
+Built by **Shihab** ([@shihabcodes](https://github.com/shihabcodes)). Feedback and issues are welcome.
 
 ## License
 
-MIT : see [LICENSE](./LICENSE).
+[MIT](./LICENSE)
