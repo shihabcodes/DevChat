@@ -7,6 +7,8 @@ import Sidebar from '@/components/Sidebar';
 import ChatArea from '@/components/ChatArea';
 import MessageInput from '@/components/MessageInput';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import AISettings from '@/components/AISettings';
+import { getKeyInfo } from '@/lib/ai';
 import * as data from '@/lib/data';
 import { useChannelRealtime, useWorkspacePresence } from '@/lib/realtime';
 import type { User, Workspace, Channel, Message, MessageType } from '@/types';
@@ -31,6 +33,8 @@ export default function WorkspacePage() {
     const [initialLoading, setInitialLoading] = useState<boolean>(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+    const [showAISettings, setShowAISettings] = useState<boolean>(false);
+    const [hasKey, setHasKey] = useState<boolean>(false);
     const messagesRef = useRef<Message[]>([]);
     messagesRef.current = messages;
 
@@ -55,6 +59,7 @@ export default function WorkspacePage() {
                 if (cancelled) return;
                 setWorkspace(ws);
                 setChannels(chs);
+                getKeyInfo().then((k) => setHasKey(k.hasKey)).catch(() => {/* AI is optional */});
                 setActiveChannel(chs.find((c) => c.name === 'general') ?? chs[0] ?? null);
             } catch (err) {
                 if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load workspace.');
@@ -230,6 +235,8 @@ export default function WorkspacePage() {
                         onlineUsers={onlineUsers}
                         currentUser={currentUser}
                         onLogout={handleLogout}
+                        onOpenAISettings={() => setShowAISettings(true)}
+                        hasOpenaiKey={hasKey}
                         isDemo={isDemo}
                     />
                 </div>
@@ -262,6 +269,7 @@ export default function WorkspacePage() {
                         currentUser={currentUser}
                         typingUsers={typingUsers}
                         onRetry={handleRetry}
+                        onMissingKey={() => setShowAISettings(true)}
                         loading={loadingMessages}
                         isDemo={isDemo}
                     />
@@ -273,6 +281,12 @@ export default function WorkspacePage() {
                         disabled={!activeChannel}
                     />
                 </div>
+
+                <AISettings
+                    open={showAISettings}
+                    onClose={() => setShowAISettings(false)}
+                    onChange={(info) => setHasKey(info.hasKey)}
+                />
             </div>
         </ErrorBoundary>
     );

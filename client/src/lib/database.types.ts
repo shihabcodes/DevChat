@@ -62,18 +62,21 @@ export type Database = {
           created_at: string
           message_id: string
           model: string
+          requested_by: string | null
         }
         Insert: {
           content: string
           created_at?: string
           message_id: string
           model: string
+          requested_by?: string | null
         }
         Update: {
           content?: string
           created_at?: string
           message_id?: string
           model?: string
+          requested_by?: string | null
         }
         Relationships: [
           {
@@ -81,6 +84,13 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: true
             referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_explanations_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -153,6 +163,35 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      user_ai_keys: {
+        Row: {
+          key_enc: string
+          key_mask: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          key_enc: string
+          key_mask: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          key_enc?: string
+          key_mask?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ai_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workspace_invites: {
         Row: {

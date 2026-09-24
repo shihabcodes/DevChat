@@ -1,25 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
 
 import { highlightCode } from '@/lib/highlight';
+import { AiError, explainMessage } from '@/lib/ai';
 
 export interface CodeBlockProps {
     code: string;
     language?: string;
+    messageId?: string;
     cachedExplanation?: string | null;
+    onMissingKey?: () => void;
 }
 
-export default function CodeBlock({ code, language, cachedExplanation }: CodeBlockProps) {
+export default function CodeBlock({ code, language, messageId, cachedExplanation, onMissingKey }: CodeBlockProps) {
     const [copied, setCopied] = useState<boolean>(false);
-    const explaining = false;
-    const explanation = cachedExplanation || null;
+    const [explaining, setExplaining] = useState<boolean>(false);
+    const [explanation, setExplanation] = useState<string | null>(cachedExplanation || null);
     const [showExplain, setShowExplain] = useState<boolean>(Boolean(cachedExplanation));
     const [html, setHtml] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
+
+    useEffect(() => () => abortRef.current?.abort(), []);
 
     useEffect(() => {
         let cancelled = false;
@@ -38,10 +44,32 @@ export default function CodeBlock({ code, language, cachedExplanation }: CodeBlo
         } catch {/* ignore */}
     };
 
-    // TODO(ai-route): stream from the new /api/ai/explain route once it exists.
-    const handleExplain = () => {
-        if (!explanation) setError('AI explanations are being rebuilt and will be back shortly.');
-        setShowExplain((v) => !v);
+    const handleExplain = async () => {
+        if (explanation && !explaining) {
+            setShowExplain((v) => !v);
+            return;
+        }
+        if (explaining) return;
+        setShowExplain(true);
+        setError(null);
+        if (!messageId || messageId.startsWith('tmp-')) {
+            setError('Wait for the message to finish sending, then try again.');
+            return;
+        }
+        setExplaining(true);
+        const ctrl = new AbortController();
+        abortRef.current = ctrl;
+        try {
+            const text = await explainMessage(messageId, setExplanation, ctrl.signal);
+            setExplanation(text || null);
+        } catch (e) {
+            if (ctrl.signal.aborted) return;
+            setExplanation(null);
+            setError(e instanceof Error ? e.message : 'Failed to generate explanation');
+            if (e instanceof AiError && e.code === 'NO_OPENAI_KEY') onMissingKey?.();
+        } finally {
+            if (!ctrl.signal.aborted) setExplaining(false);
+        }
     };
 
     return (

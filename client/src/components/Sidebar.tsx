@@ -12,6 +12,8 @@ export interface SidebarProps {
     onlineUsers: OnlineUser[];
     currentUser: User | null;
     onLogout: () => void;
+    onOpenAISettings: () => void;
+    hasOpenaiKey?: boolean;
     isDemo?: boolean;
 }
 
@@ -24,6 +26,8 @@ export default function Sidebar({
     onlineUsers,
     currentUser,
     onLogout,
+    onOpenAISettings,
+    hasOpenaiKey,
     isDemo,
 }: SidebarProps) {
     const [showNewChannel, setShowNewChannel] = useState<boolean>(false);
@@ -158,6 +162,21 @@ export default function Sidebar({
             </div>
 
             <div className="p-3 border-t border-[#1f1f1f] bg-[#0a0a0c] space-y-2">
+                <button
+                    onClick={onOpenAISettings}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono border transition-colors ${
+                        hasOpenaiKey
+                            ? 'border-[#10b981]/30 bg-[#10b981]/5 text-[#10b981] hover:bg-[#10b981]/10'
+                            : 'border-[#1f1f1f] bg-[#0e0e10] text-[#a1a1a1] hover:text-white hover:border-[#2e2e2e]'
+                    }`}
+                >
+                    <div className="flex items-center gap-2">
+                        <span className={`w-1.5 h-1.5 rounded-full ${hasOpenaiKey ? 'bg-[#10b981]' : 'bg-[#f59e0b]'}`} />
+                        <span>{hasOpenaiKey ? 'AI Key Active' : 'Configure AI Key'}</span>
+                    </div>
+                    <span className="text-[10px] text-[#71717a]">⚙</span>
+                </button>
+
                 {isDemo && (
                     <p className="px-1 text-[10px] leading-snug text-[#71717a]">
                         Guest demo: this workspace is deleted after 24 hours.
