@@ -71,7 +71,7 @@ export default function OpengraphImage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 16 }}>
-                    {['⚡ Sub-50ms WebSockets', '🎨 Shiki Highlighting', '✨ AI Streaming'].map((pill) => (
+                    {['⚡ Real-Time Channels', '🎨 Shiki Highlighting', '✨ AI Streaming'].map((pill) => (
                         <div
                             key={pill}
                             style={{

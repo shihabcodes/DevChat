@@ -152,7 +152,7 @@ export default function Home() {
         setMockExplaining(true);
         setMockExplanation('');
 
-        const fullText = "This Rust struct implements a token-bucket rate limiter. Key observations:\n\n1. Atomic Operations: Replacing Mutex<usize> with AtomicUsize reduces lock contention under high concurrency.\n2. Monotonic Clock: Using Instant::now() avoids wall-clock drift issues during NTP adjustments.\n3. Latency: Refill calculation executes in <15ns per request.";
+        const fullText = "This Rust struct implements a token-bucket rate limiter. Key observations:\n\n1. Atomic Operations: Replacing Mutex<usize> with AtomicUsize reduces lock contention under high concurrency.\n2. Monotonic Clock: Using Instant::now() avoids wall-clock drift issues during NTP adjustments.\n3. Refill is computed lazily from elapsed time, so there is no background timer.";
         let currentIdx = 0;
 
         if (explainTimerRef.current) clearInterval(explainTimerRef.current);
@@ -200,9 +200,6 @@ export default function Home() {
                                 DevChat<span className="text-[#52a8ff]">.</span>
                             </span>
                         </a>
-                        <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-medium border border-white/[0.08] bg-white/[0.03] text-[#a1a1aa]">
-                            v2.4
-                        </span>
                     </div>
 
                     {/* Center Navigation Links */}
@@ -224,8 +221,7 @@ export default function Home() {
                             <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                                 <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
                             </svg>
-                            <span>Star</span>
-                            <span className="px-1.5 py-0.2 rounded-full bg-[#1c1c1f] text-[10px] text-white font-mono">142</span>
+                            <span>Star on GitHub</span>
                         </a>
 
                         <button
@@ -276,7 +272,7 @@ export default function Home() {
                     {/* Right Column: Narrative Subtitle & Dual Action Buttons (Aligned to Bottom Baseline) */}
                     <div className="flex flex-col items-start justify-between gap-5 max-w-md pb-1">
                         <p className="text-base sm:text-lg text-[#a1a1aa] leading-relaxed font-normal">
-                            DevChat empowers engineers with in-line AI intelligence, sub-50ms channels, and syntax-highlighted code execution without leaving the flow.
+                            Share code with syntax highlighting, get streamed AI explanations right in the thread, and keep your team in real-time channels. No tab switching.
                         </p>
 
                         <div className="flex flex-wrap items-center gap-3.5 pt-1">
@@ -359,7 +355,7 @@ export default function Home() {
                             <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/25 shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
                                 <span className="text-[11px] font-mono text-[#10b981] font-medium hidden sm:inline">
-                                    Sub-50ms
+                                    Live
                                 </span>
                             </div>
                         </div>
@@ -549,7 +545,7 @@ export default function Home() {
                                                         </div>
                                                         <div className="pt-2 border-t border-white/[0.06] text-[10px] text-[#71717a] flex items-center gap-1.5">
                                                             <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                                            <span>Benchmarked 50k req/s</span>
+                                                            <span>Illustrative example</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -586,7 +582,7 @@ export default function Home() {
                                                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#18181b] text-[#10b981] font-mono">Benchmark</span>
                                             </div>
                                             <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed">
-                                                Tested with 50k concurrent sockets. Latency is under 40ms.
+                                                Nice, the lazy refill is way simpler than a timer. Shipping it.
                                             </p>
                                         </div>
                                     </div>
@@ -650,14 +646,14 @@ export default function Home() {
                         <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-base mb-4 shadow-[0_0_12px_rgba(82,168,255,0.15)]">
                             ⚡
                         </div>
-                        <h3 className="text-base font-bold text-white mb-2">Sub-50ms WebSockets</h3>
+                        <h3 className="text-base font-bold text-white mb-2">Real-Time by Default</h3>
                         <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Built on Socket.io with Redis pub/sub backplane. Features optimistic message delivery and instant typing indicators across distributed server instances.
+                            Messages, typing indicators, and presence stream over Supabase Realtime. Sends are optimistic with retry, and missed messages are backfilled after a reconnect.
                         </p>
                         <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Socket.io 4.x</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Redis Cluster</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">&lt;40ms Latency</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Supabase Realtime</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Presence</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">Optimistic UI</span>
                         </div>
                     </div>
 
@@ -667,10 +663,10 @@ export default function Home() {
                         </div>
                         <h3 className="text-base font-bold text-white mb-2">In-Line Streamed AI</h3>
                         <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Click &quot;Explain&quot; on any code snippet to receive token-by-token GPT-4o-mini breakdowns directly in chat without context switching or leaving your flow.
+                            Click &quot;Explain&quot; on any code snippet to receive token-by-token breakdowns directly in chat without context switching or leaving your flow.
                         </p>
                         <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">GPT-4o-mini</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">OpenAI BYOK</span>
                             <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">SSE Streaming</span>
                             <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#52a8ff]">Snippet Cache</span>
                         </div>
@@ -680,14 +676,14 @@ export default function Home() {
                         <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-base mb-4 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
                             🖥️
                         </div>
-                        <h3 className="text-base font-bold text-white mb-2">VS Code-Grade Shiki</h3>
+                        <h3 className="text-base font-bold text-white mb-2">Real Syntax Highlighting</h3>
                         <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Powered by Shiki syntax engine across 20+ languages including Rust, TypeScript, Python, and Go with Monaco editor integration for fast code sharing.
+                            Code is highlighted with Shiki, the engine behind VS Code's themes, across 20 languages, and written in a Monaco editor.
                         </p>
                         <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
                             <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Shiki Engine</span>
                             <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Monaco Editor</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">20+ Themes</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">20 Languages</span>
                         </div>
                     </div>
 
@@ -695,12 +691,12 @@ export default function Home() {
                         <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-base mb-4 shadow-[0_0_12px_rgba(245,158,11,0.15)]">
                             🔒
                         </div>
-                        <h3 className="text-base font-bold text-white mb-2">AES-256 Key Security</h3>
+                        <h3 className="text-base font-bold text-white mb-2">Secure by Design</h3>
                         <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Bring your own OpenAI API key encrypted at rest with AES-256-GCM, plus an instant guest sandbox that works out of the box with zero setup friction.
+                            Row level security in Postgres decides who sees what. Your OpenAI key is encrypted with AES-256-GCM and never sent back to the browser.
                         </p>
                         <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">AES-256-GCM</span>
+                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Postgres RLS</span>
                             <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">BYO Key</span>
                             <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">Instant Guest</span>
                         </div>
@@ -715,7 +711,7 @@ export default function Home() {
                                 FULL-STACK SPECIFICATION
                             </div>
                             <h3 className="text-base sm:text-lg font-bold text-white">
-                                High-Concurrency Real-Time Infrastructure
+                                How It's Built
                             </h3>
                         </div>
                         <a
@@ -736,19 +732,19 @@ export default function Home() {
                             <div className="text-[#71717a] text-[11px]">React 19, Shiki</div>
                         </div>
                         <div className="space-y-1">
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">WebSockets</div>
-                            <div className="text-white font-medium text-sm">Socket.io 4.x</div>
-                            <div className="text-[#71717a] text-[11px]">Redis Pub/Sub</div>
+                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Real-Time</div>
+                            <div className="text-white font-medium text-sm">Supabase Realtime</div>
+                            <div className="text-[#71717a] text-[11px]">Broadcast + Presence</div>
                         </div>
                         <div className="space-y-1">
                             <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">AI Streaming</div>
-                            <div className="text-white font-medium text-sm">GPT-4o-mini</div>
+                            <div className="text-white font-medium text-sm">OpenAI (BYOK)</div>
                             <div className="text-[#71717a] text-[11px]">SSE Streaming</div>
                         </div>
                         <div className="space-y-1">
                             <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Datastore</div>
-                            <div className="text-white font-medium text-sm">MongoDB 8.x</div>
-                            <div className="text-[#71717a] text-[11px]">AES-256 encryption</div>
+                            <div className="text-white font-medium text-sm">Postgres</div>
+                            <div className="text-[#71717a] text-[11px]">Row Level Security</div>
                         </div>
                     </div>
                 </div>
