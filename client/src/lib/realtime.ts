@@ -101,8 +101,10 @@ export function useChannelRealtime(channelId: string | null, user: User | null, 
                 .on('postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
                     (payload) => eventsRef.current.onMessageUpdated((payload.new as { id: string }).id))
+                // Supabase can't filter DELETE events (the old row only carries its id),
+                // so listen to all deletes; ids we don't have are simply ignored.
                 .on('postgres_changes',
-                    { event: 'DELETE', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
+                    { event: 'DELETE', schema: 'public', table: 'messages' },
                     (payload) => eventsRef.current.onMessageDeleted((payload.old as { id: string }).id))
                 .on('broadcast', { event: 'typing' }, ({ payload }) => {
                     const { userId, displayName, typing } = payload as TypingUser & { typing: boolean };
