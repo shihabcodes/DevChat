@@ -163,16 +163,13 @@ export default function WorkspacePage() {
         deliver({ ...failed, id: tempId(), createdAt: new Date().toISOString(), _failed: false, _error: undefined, _pending: true });
     }, [deliver]);
 
+    // Errors propagate to the sidebar, which shows them inline.
     const handleCreateChannel = useCallback(async (name: string) => {
         if (!workspace || !currentUser) return;
-        try {
-            const channel = await data.createChannel(workspace.id, currentUser.id, name);
-            setChannels((prev) => [...prev, channel]);
-            setActiveChannel(channel);
-            setSidebarOpen(false);
-        } catch (err) {
-            window.alert(err instanceof Error ? err.message : 'Failed to create channel');
-        }
+        const channel = await data.createChannel(workspace.id, currentUser.id, name);
+        setChannels((prev) => [...prev, channel]);
+        setActiveChannel(channel);
+        setSidebarOpen(false);
     }, [workspace, currentUser]);
 
     const handleSelectChannel = useCallback((channel: Channel) => {
@@ -189,25 +186,23 @@ export default function WorkspacePage() {
 
     if (initialLoading) {
         return (
-            <div className="flex h-screen bg-black">
-                <div className="w-[260px] border-r border-[#1f1f1f] py-5 px-4 bg-[#080809]">
-                    <div className="skeleton h-6 w-[70%] mb-6" />
-                    <div className="skeleton h-3.5 w-[40%] mb-3" />
-                    {[...Array(4)].map((_, i) => (
-                        <div key={i} className="skeleton h-3.5 mb-2.5 ml-2" style={{ width: `${50 + i * 10}%` }} />
-                    ))}
+            <div className="flex h-dvh bg-bg">
+                <div className="hidden w-[260px] space-y-3 border-r border-line bg-panel p-4 md:block">
+                    <div className="skeleton mb-6 h-6 w-2/3" />
+                    {[60, 45, 70, 50].map((w, i) => <div key={i} className="skeleton h-4" style={{ width: `${w}%` }} />)}
                 </div>
-                <div className="flex-1 bg-black" />
+                <div className="flex-1" />
             </div>
         );
     }
 
     if (loadError && !workspace) {
         return (
-            <div className="flex h-screen items-center justify-center bg-black px-4 text-center">
+            <div className="flex h-dvh items-center justify-center bg-bg px-6 text-center">
                 <div className="max-w-sm">
-                    <p className="text-sm text-[#ededed] mb-4">{loadError}</p>
-                    <Link href="/" className="text-xs font-mono text-[#52a8ff] hover:underline">← Back to DevChat</Link>
+                    <h1 className="text-lg font-semibold">Can&apos;t open this workspace</h1>
+                    <p className="mt-2 text-sm text-fg-muted">{loadError}</p>
+                    <Link href="/" className="btn btn-secondary mt-6">Back to DevChat</Link>
                 </div>
             </div>
         );
@@ -215,14 +210,19 @@ export default function WorkspacePage() {
 
     return (
         <ErrorBoundary>
-            <div className="flex h-screen bg-black text-[#ededed] overflow-hidden">
+            <div className="flex h-dvh overflow-hidden bg-bg text-fg">
                 {connection !== 'connected' && activeChannel && (
-                    <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-1.5 text-center text-xs font-mono font-medium text-white ${
-                        connection === 'disconnected' ? 'bg-[#ef4444]' : 'bg-[#f59e0b]'
-                    }`}>
+                    <div
+                        role="status"
+                        className={`fixed left-1/2 top-3 z-50 -translate-x-1/2 rounded-full border px-3 py-1 text-xs font-medium shadow-lg shadow-black/40 ${
+                            connection === 'disconnected'
+                                ? 'border-danger/30 bg-[#2a1214] text-[#ffb3b5]'
+                                : 'border-accent/30 bg-[#2a2010] text-accent'
+                        }`}
+                    >
                         {connection === 'connecting' && 'Connecting…'}
-                        {connection === 'reconnecting' && 'Reconnecting… messages will sync once back online.'}
-                        {connection === 'disconnected' && 'Live updates are offline. Refresh the page to reconnect.'}
+                        {connection === 'reconnecting' && 'Reconnecting… messages will sync when you\'re back'}
+                        {connection === 'disconnected' && 'Offline. Refresh to reconnect.'}
                     </div>
                 )}
 
@@ -231,13 +231,13 @@ export default function WorkspacePage() {
                         type="button"
                         aria-label="Close sidebar"
                         onClick={() => setSidebarOpen(false)}
-                        className="md:hidden fixed inset-0 z-30 bg-black/80 backdrop-blur-sm cursor-default"
+                        className="fixed inset-0 z-30 cursor-default bg-black/70 backdrop-blur-sm md:hidden"
                     />
                 )}
 
-                <div className={`fixed md:static z-40 h-full transition-transform duration-200 ${
+                <div className={`fixed z-40 h-full transition-transform duration-200 md:static md:translate-x-0 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                } md:translate-x-0`}>
+                }`}>
                     <Sidebar
                         workspace={workspace}
                         channels={channels}
@@ -250,38 +250,19 @@ export default function WorkspacePage() {
                         onOpenAISettings={() => setShowAISettings(true)}
                         hasOpenaiKey={hasKey}
                         isDemo={isDemo}
+                        onClose={() => setSidebarOpen(false)}
                     />
                 </div>
 
-                <div className="flex-1 flex flex-col min-w-0 bg-black">
-                    <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#1f1f1f] bg-[#0a0a0a]">
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setSidebarOpen(true)}
-                                className="p-1 rounded text-[#a1a1a1] hover:text-white"
-                                aria-label="Open sidebar"
-                            >
-                                ☰
-                            </button>
-                            <span className="text-[#52a8ff] font-mono">#</span>
-                            <span className="text-xs font-semibold text-white truncate">
-                                {activeChannel?.name || 'general'}
-                            </span>
-                        </div>
-                        {isDemo && (
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#52a8ff]/10 text-[#52a8ff] border border-[#52a8ff]/20">
-                                Demo Mode
-                            </span>
-                        )}
-                    </div>
-
+                <main className="flex min-w-0 flex-1 flex-col">
                     <ChatArea
                         messages={messages}
                         channel={activeChannel}
-                        currentUser={currentUser}
                         typingUsers={typingUsers}
+                        onlineUsers={onlineUsers}
                         onRetry={handleRetry}
                         onMissingKey={() => setShowAISettings(true)}
+                        onOpenSidebar={() => setSidebarOpen(true)}
                         loading={loadingMessages}
                         isDemo={isDemo}
                     />
@@ -291,8 +272,9 @@ export default function WorkspacePage() {
                         onTyping={() => sendTyping(true)}
                         onStopTyping={() => sendTyping(false)}
                         disabled={!activeChannel}
+                        placeholder={activeChannel ? `Message #${activeChannel.name}` : undefined}
                     />
-                </div>
+                </main>
 
                 <AISettings
                     open={showAISettings}
