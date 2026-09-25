@@ -31,7 +31,7 @@ begin
 end $$;
 
 select pg_temp.ok('trigger created 3 profiles',
-    (select count(*) from public.profiles p join t_ctx c on c.v::uuid = p.id) = 3);
+    (select count(*) from public.profiles p join t_ctx c on c.v = p.id::text) = 3);
 
 -- ----- Alice: owner --------------------------------------------------------
 select pg_temp.act_as('alice');
@@ -122,6 +122,19 @@ begin
         perform pg_temp.ok('member: can NOT truncate tables', true);
     end;
 
+    -- Editing a message clears its cached AI explanation (inserted as the server would).
+    declare mid uuid;
+    begin
+        insert into public.messages (channel_id, user_id, type, content) values (ch, auth.uid(), 'code', 'let a = 1;') returning id into mid;
+        perform set_config('role', 'postgres', true);
+        insert into public.message_explanations (message_id, content, model) values (mid, 'old', 'test');
+        perform set_config('role', 'authenticated', true);
+        update public.messages set content = 'let a = 2;' where id = mid;
+        perform pg_temp.ok('editing a message clears its AI explanation',
+            not exists (select 1 from public.message_explanations where message_id = mid));
+        perform pg_temp.ok('editing stamps edited_at',
+            (select edited_at is not null from public.messages where id = mid));
+    end;
     perform pg_temp.ok('realtime: member may join channel topic',
         private.can_use_realtime_topic('channel:' || ch));
     perform pg_temp.ok('realtime: member may join workspace topic',
@@ -216,8 +229,8 @@ reset role;
 
 -- ----- Cleanup: deleting auth users cascades to everything they created ----
 delete from public.workspaces where id = (select v::uuid from t_ctx where k = 'ws');
-delete from auth.users where id in (select v::uuid from t_ctx where k in ('alice', 'bob', 'eve'));
+delete from auth.users where id::text in (select v from t_ctx where k in ('alice', 'bob', 'eve'));
 select pg_temp.ok('cleanup: no test data left',
-    (select count(*) from public.profiles p join t_ctx c on c.v::uuid = p.id) = 0);
+    (select count(*) from public.profiles p join t_ctx c on c.v = p.id::text) = 0);
 
 select n, pass, check_name, detail from t_results order by n;
