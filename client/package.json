@@ -12,6 +12,7 @@
         "@monaco-editor/react": "^4.6.0",
         "@react-oauth/google": "^0.13.5",
         "@supabase/supabase-js": "^2.117.1",
+        "geist": "^1.7.2",
         "next": "^15.1.0",
         "openai": "^7.23.0",
         "react": "^19.0.0",

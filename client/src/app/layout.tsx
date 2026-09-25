@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import React from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import './globals.css';
 
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -47,23 +49,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-    themeColor: '#000000',
+    themeColor: '#0a0a0b',
     width: 'device-width',
     initialScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" className="dark" suppressHydrationWarning>
-            <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-                <link
-                    href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap"
-                    rel="stylesheet"
-                />
-            </head>
-            <body style={{ fontFamily: "'Geist', 'Inter', sans-serif" }} suppressHydrationWarning>
+        <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+            <body className="bg-bg text-fg antialiased">
                 {googleClientId ? (
                     <GoogleOAuthProvider clientId={googleClientId}>{children}</GoogleOAuthProvider>
                 ) : (
