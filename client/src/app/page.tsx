@@ -6,9 +6,10 @@ import dynamic from 'next/dynamic';
 import * as data from '@/lib/data';
 import { highlightCode } from '@/lib/highlight';
 import AuthDialog, { type AuthMode } from '@/components/AuthDialog';
-import { Logo } from '@/components/ui/Brand';
+import { Avatar, Logo } from '@/components/ui/Brand';
+import type { User } from '@/types';
 import {
-    ArrowRightIcon, CodeIcon, DatabaseIcon, GitHubIcon, KeyIcon, LockIcon, SparklesIcon, ZapIcon,
+    ArrowRightIcon, CodeIcon, DatabaseIcon, GitHubIcon, KeyIcon, LockIcon, LogOutIcon, SparklesIcon, ZapIcon,
 } from '@/components/ui/icons';
 
 const REPO_URL = 'https://github.com/shihabcodes/DevChat';
@@ -79,7 +80,8 @@ export default function Home() {
     const [authOpen, setAuthOpen] = useState(false);
     const [authMode, setAuthMode] = useState<AuthMode>('login');
     const [authError, setAuthError] = useState<string | undefined>();
-    const [signedIn, setSignedIn] = useState(false);
+    const [user, setUser] = useState<User | null>(null);
+    const [opening, setOpening] = useState(false);
     const [demoLoading, setDemoLoading] = useState(false);
 
     const goToWorkspace = useCallback(async () => {
@@ -89,14 +91,37 @@ export default function Home() {
         router.push(`/workspace/${workspace.id}`);
     }, [router]);
 
-    // Signed-in visitors see "Open app"; arriving from an email confirmation link goes straight in.
-    useEffect(() => {
-        data.getCurrentUser().then((user) => {
-            if (!user) return;
-            setSignedIn(true);
-            if (window.location.hash.includes('access_token')) goToWorkspace().catch(() => {});
-        }).catch(() => {});
+    const openApp = useCallback(async () => {
+        setOpening(true);
+        try {
+            await goToWorkspace();
+        } catch {
+            setOpening(false);
+        }
     }, [goToWorkspace]);
+
+    // Signed-in visitors see who they are, with "Open app" and "Sign out".
+    // Returning from Google or an email confirmation link goes straight in;
+    // an OAuth error comes back in the URL fragment and is shown in the dialog.
+    useEffect(() => {
+        const hash = new URLSearchParams(window.location.hash.slice(1));
+        const oauthError = hash.get('error_description');
+        data.getCurrentUser().then((u) => {
+            setUser(u);
+            if (u && hash.has('access_token')) openApp();
+        }).catch(() => {});
+        if (oauthError) {
+            history.replaceState(null, '', window.location.pathname);
+            setAuthMode('login');
+            setAuthError(oauthError.replace(/\+/g, ' '));
+            setAuthOpen(true);
+        }
+    }, [openApp]);
+
+    const signOut = async () => {
+        await data.signOut();
+        setUser(null);
+    };
 
     const openAuth = useCallback((mode: AuthMode, error?: string) => {
         setAuthMode(mode);
@@ -122,20 +147,27 @@ export default function Home() {
             const target = e.target as HTMLElement;
             if (authOpen || e.metaKey || e.ctrlKey || e.altKey || target.closest('input, textarea, select, [contenteditable]')) return;
             const key = e.key.toLowerCase();
-            if (key === 'd') startDemo();
+            if (key === 'd') (user ? openApp() : startDemo());
             else if (key === 'l') openAuth('login');
             else if (key === 'c') openAuth('register');
         };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [authOpen, openAuth, startDemo]);
+    }, [authOpen, openAuth, startDemo, openApp, user]);
 
-    const demoButton = (size: 'lg' | 'md' = 'lg') => (
-        <button type="button" onClick={startDemo} disabled={demoLoading} className={`btn btn-primary ${size === 'lg' ? 'btn-lg' : ''}`}>
-            {demoLoading ? 'Setting up your workspace…' : 'Try the live demo'}
-            {!demoLoading && <ArrowRightIcon size={16} />}
-        </button>
-    );
+    // Signed-in visitors get their workspace instead of a demo that would replace their session.
+    const primaryCta = () =>
+        user ? (
+            <button type="button" onClick={openApp} disabled={opening} className="btn btn-lg btn-primary">
+                {opening ? 'Opening…' : 'Open your workspace'}
+                {!opening && <ArrowRightIcon size={16} />}
+            </button>
+        ) : (
+            <button type="button" onClick={startDemo} disabled={demoLoading} className="btn btn-lg btn-primary">
+                {demoLoading ? 'Setting up your workspace…' : 'Try the live demo'}
+                {!demoLoading && <ArrowRightIcon size={16} />}
+            </button>
+        );
 
     return (
         <div className="min-h-dvh overflow-x-clip">
@@ -151,13 +183,24 @@ export default function Home() {
                         </a>
                     </nav>
                     <div className="flex items-center gap-2">
-                        {signedIn ? (
-                            <button type="button" onClick={() => goToWorkspace()} className="btn btn-sm btn-primary">
-                                Open app <ArrowRightIcon size={14} />
-                            </button>
+                        {user ? (
+                            <>
+                                <span className="hidden items-center gap-2 pr-1 text-sm text-fg-muted sm:inline-flex" title={`Signed in as ${user.displayName}`}>
+                                    <Avatar name={user.displayName} seed={user.id} src={user.avatar} size={22} />
+                                    <span className="max-w-[140px] truncate">{user.displayName}</span>
+                                </span>
+                                <button type="button" onClick={signOut} className="btn btn-sm btn-ghost" aria-label="Sign out" title="Sign out">
+                                    <LogOutIcon size={14} />
+                                    <span className="hidden sm:inline">Sign out</span>
+                                </button>
+                                <button type="button" onClick={openApp} disabled={opening} className="btn btn-sm btn-primary">
+                                    {opening ? 'Opening…' : 'Open app'} <ArrowRightIcon size={14} />
+                                </button>
+                            </>
                         ) : (
                             <>
                                 <button type="button" onClick={() => openAuth('login')} className="btn btn-sm btn-ghost">Sign in</button>
+                                <button type="button" onClick={() => openAuth('register')} className="btn btn-sm btn-secondary hidden sm:inline-flex">Sign up</button>
                                 <button type="button" onClick={startDemo} disabled={demoLoading} className="btn btn-sm btn-primary">
                                     {demoLoading ? 'Starting…' : 'Try demo'}
                                 </button>
@@ -193,14 +236,16 @@ export default function Home() {
                             streams in right under the code, cached for the whole channel.
                         </p>
                         <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            {demoButton()}
+                            {primaryCta()}
                             <a href={REPO_URL} target="_blank" rel="noreferrer" className="btn btn-lg btn-secondary">
                                 <GitHubIcon size={16} /> View source
                             </a>
                         </div>
-                        <p className="mt-4 text-xs text-fg-subtle">
-                            No signup. You get a private workspace, deleted after 24 hours. <span className="hidden sm:inline">Or press <span className="kbd">D</span></span>
-                        </p>
+                        {!user && (
+                            <p className="mt-4 text-xs text-fg-subtle">
+                                No signup. You get a private workspace, deleted after 24 hours. <span className="hidden sm:inline">Or press <span className="kbd">D</span></span>
+                            </p>
+                        )}
                     </div>
 
                     <div className="relative mx-auto mt-16 max-w-6xl px-3 sm:px-6">
@@ -275,13 +320,13 @@ export default function Home() {
                 <section className="mx-auto max-w-6xl px-5 py-28 text-center sm:px-6">
                     <h2 className="text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">See it for yourself.</h2>
                     <p className="mt-3 text-fg-muted">One click, about ten seconds, no account.</p>
-                    <div className="mt-8 flex justify-center">{demoButton()}</div>
-                    <p className="mt-6 text-sm text-fg-subtle">
+                    <div className="mt-8 flex justify-center">{primaryCta()}</div>
+                    {!user && <p className="mt-6 text-sm text-fg-subtle">
                         Already have an account?{' '}
                         <button type="button" onClick={() => openAuth('login')} className="font-medium text-fg-muted hover:text-fg">Sign in</button>
                         {' · '}
                         <button type="button" onClick={() => openAuth('invite')} className="font-medium text-fg-muted hover:text-fg">Join with an invite code</button>
-                    </p>
+                    </p>}
                 </section>
             </main>
 
