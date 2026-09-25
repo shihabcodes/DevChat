@@ -226,14 +226,21 @@ export async function createChannel(workspaceId: string, userId: string, rawName
 // Messages
 // ---------------------------------------------------------------------------
 
-/** The most recent messages in a channel, oldest first. */
-export async function listRecentMessages(channelId: string): Promise<Message[]> {
-    const { data, error } = await supabase
+export const PAGE_SIZE = MESSAGE_PAGE_SIZE;
+
+/**
+ * A page of messages, oldest first: the most recent ones, or those older
+ * than `before` (an ISO timestamp) when paging back through history.
+ */
+export async function listRecentMessages(channelId: string, before?: string): Promise<Message[]> {
+    let query = supabase
         .from('messages')
         .select(MESSAGE_SELECT)
         .eq('channel_id', channelId)
         .order('created_at', { ascending: false })
         .limit(MESSAGE_PAGE_SIZE);
+    if (before) query = query.lt('created_at', before);
+    const { data, error } = await query;
     fail(error);
     return ((data ?? []) as unknown as MessageRow[]).map(toMessage).reverse();
 }
@@ -264,6 +271,25 @@ export async function sendMessage(
         .single();
     fail(error);
     return toMessage(data as unknown as MessageRow);
+}
+
+/** RLS lets authors edit only their own messages; the database stamps edited_at. */
+export async function editMessage(id: string, content: string): Promise<Message> {
+    const { data, error } = await supabase
+        .from('messages')
+        .update({ content })
+        .eq('id', id)
+        .select(MESSAGE_SELECT)
+        .single();
+    fail(error);
+    return toMessage(data as unknown as MessageRow);
+}
+
+/** Authors can delete their own messages; workspace admins can delete any. */
+export async function deleteMessage(id: string): Promise<void> {
+    const { error, count } = await supabase.from('messages').delete({ count: 'exact' }).eq('id', id);
+    fail(error);
+    if (count === 0) throw new DataError("You can't delete this message.");
 }
 
 // ---------------------------------------------------------------------------
