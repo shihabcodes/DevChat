@@ -8,6 +8,7 @@ import ChatArea from '@/components/ChatArea';
 import MessageInput from '@/components/MessageInput';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import AISettings from '@/components/AISettings';
+import QuickSwitcher from '@/components/QuickSwitcher';
 import { getKeyInfo } from '@/lib/ai';
 import * as data from '@/lib/data';
 import { useChannelRealtime, useWorkspacePresence } from '@/lib/realtime';
@@ -35,6 +36,9 @@ export default function WorkspacePage() {
     const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
     const [showAISettings, setShowAISettings] = useState<boolean>(false);
     const [hasKey, setHasKey] = useState<boolean>(false);
+    const [hasMore, setHasMore] = useState<boolean>(false);
+    const [loadingOlder, setLoadingOlder] = useState<boolean>(false);
+    const [switcherOpen, setSwitcherOpen] = useState<boolean>(false);
     const messagesRef = useRef<Message[]>([]);
     messagesRef.current = messages;
 
@@ -76,12 +80,38 @@ export default function WorkspacePage() {
         let cancelled = false;
         setLoadingMessages(true);
         setMessages([]);
+        setHasMore(false);
         data.listRecentMessages(activeChannel.id)
-            .then((msgs) => { if (!cancelled) setMessages(msgs); })
+            .then((msgs) => {
+                if (cancelled) return;
+                setMessages(msgs);
+                setHasMore(msgs.length === data.PAGE_SIZE);
+            })
             .catch((err) => { if (!cancelled) setLoadError(err.message); })
             .finally(() => { if (!cancelled) setLoadingMessages(false); });
         return () => { cancelled = true; };
     }, [activeChannel]);
+
+    // Older history, fetched when the reader scrolls to the top
+    const loadOlder = useCallback(async () => {
+        const channelId = activeChannel?.id;
+        const oldest = messagesRef.current.find((m) => !m._pending && !m._failed);
+        if (!channelId || !oldest || loadingOlder) return;
+        setLoadingOlder(true);
+        try {
+            const older = await data.listRecentMessages(channelId, oldest.createdAt);
+            setMessages((prev) => {
+                if (prev[0]?.channelId && prev[0].channelId !== channelId) return prev;
+                const known = new Set(prev.map((m) => m.id));
+                return [...older.filter((m) => !known.has(m.id)), ...prev];
+            });
+            setHasMore(older.length === data.PAGE_SIZE);
+        } catch {
+            setHasMore(false);
+        } finally {
+            setLoadingOlder(false);
+        }
+    }, [activeChannel, loadingOlder]);
 
     // Live updates
     const upsertMessage = useCallback((msg: Message) => {
@@ -162,6 +192,29 @@ export default function WorkspacePage() {
         setMessages((prev) => prev.filter((m) => m.id !== failed.id));
         deliver({ ...failed, id: tempId(), createdAt: new Date().toISOString(), _failed: false, _error: undefined, _pending: true });
     }, [deliver]);
+
+    // Edits and deletes apply locally right away; realtime tells everyone else.
+    const handleEdit = useCallback(async (message: Message, content: string) => {
+        const saved = await data.editMessage(message.id, content);
+        upsertMessage(saved);
+    }, [upsertMessage]);
+
+    const handleDelete = useCallback(async (message: Message) => {
+        await data.deleteMessage(message.id);
+        setMessages((prev) => prev.filter((m) => m.id !== message.id));
+    }, []);
+
+    // ⌘K / Ctrl+K opens the channel switcher.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                setSwitcherOpen((v) => !v);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
 
     // Errors propagate to the sidebar, which shows them inline.
     const handleCreateChannel = useCallback(async (name: string) => {
@@ -251,6 +304,7 @@ export default function WorkspacePage() {
                         hasOpenaiKey={hasKey}
                         isDemo={isDemo}
                         onClose={() => setSidebarOpen(false)}
+                        onOpenSwitcher={() => { setSidebarOpen(false); setSwitcherOpen(true); }}
                     />
                 </div>
 
@@ -265,6 +319,12 @@ export default function WorkspacePage() {
                         onOpenSidebar={() => setSidebarOpen(true)}
                         loading={loadingMessages}
                         isDemo={isDemo}
+                        currentUserId={currentUser?.id}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        hasMore={hasMore}
+                        loadingOlder={loadingOlder}
+                        onLoadOlder={loadOlder}
                     />
 
                     <MessageInput
@@ -275,6 +335,14 @@ export default function WorkspacePage() {
                         placeholder={activeChannel ? `Message #${activeChannel.name}` : undefined}
                     />
                 </main>
+
+                <QuickSwitcher
+                    open={switcherOpen}
+                    channels={channels}
+                    activeChannelId={activeChannel?.id}
+                    onSelect={handleSelectChannel}
+                    onClose={() => setSwitcherOpen(false)}
+                />
 
                 <AISettings
                     open={showAISettings}
