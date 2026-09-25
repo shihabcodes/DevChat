@@ -24,7 +24,13 @@ There is no other server to host.
 4. In the dashboard, under **Authentication**:
    - **Sign In / Providers**: enable *Allow anonymous sign-ins*.
    - **URL Configuration**: set the Site URL to your production URL, and add `https://<your-app>.vercel.app/**` to Redirect URLs. Email confirmation links use these.
-5. Optional but recommended before real users sign up: under **Authentication → Emails → SMTP Settings**, connect an email provider such as Resend. The built-in sender only allows a few emails per hour.
+5. **Google sign-in (optional).** The "Continue with Google" button appears automatically once the provider is enabled:
+   1. In [Google Cloud Console](https://console.cloud.google.com), open **Google Auth Platform**. Configure branding (app name, support email) and set the audience to **External**, then publish the app. The basic `openid`, `email` and `profile` scopes don't need Google verification.
+   2. Under **Clients**, create an OAuth client of type **Web application**:
+      - Authorized JavaScript origins: your production URL and `http://localhost:3000`
+      - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+   3. In Supabase → **Authentication → Sign In / Providers → Google**, enable it and paste the Client ID and Client Secret.
+6. Optional but recommended before real users sign up: under **Authentication → Emails → SMTP Settings**, connect an email provider such as Resend. The built-in sender only allows a few emails per hour.
 
 ### Keeping a free project awake
 
@@ -42,7 +48,6 @@ Free Supabase projects pause after 7 days without database activity. Any real us
    | `SUPABASE_SECRET_KEY` | Secret key (`sb_secret_…`). Mark it **Sensitive** |
    | `AI_KEY_ENCRYPTION_SECRET` | Same value as in your `.env.local`. Mark it **Sensitive** |
    | `OPENAI_MODEL` | Optional. Defaults to `gpt-4o-mini` |
-   | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Optional |
 
    `AI_KEY_ENCRYPTION_SECRET` must stay the same across deploys. If it changes, stored OpenAI keys can't be decrypted, and users have to re-enter them.
 
