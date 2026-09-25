@@ -1,13 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4F46E5"/>
-      <stop offset="100%" stop-color="#A855F7"/>
-    </linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="14" fill="url(#g)"/>
-  <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle"
-        font-family="ui-monospace, 'JetBrains Mono', monospace" font-size="28" font-weight="800" fill="#fff">
-    &lt;/&gt;
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="8" fill="#ededef"/>
+  <path d="M9 10.5h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-6.5L12 25v-3.5H9a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" fill="#0a0a0b"/>
+  <path d="m13.5 14-2 2 2 2M18.5 14l2 2-2 2" stroke="#ffb224" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
