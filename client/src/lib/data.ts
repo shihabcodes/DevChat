@@ -284,7 +284,7 @@ export async function startDemo(): Promise<string> {
         '👋 Welcome to DevChat! This is a private demo workspace that disappears after 24 hours.', 'text');
     await sendMessage(general.id, userId, DEMO_SNIPPET, 'code', 'javascript');
     await sendMessage(general.id, userId,
-        '💡 Try **code mode** with the `</>` button, or open this workspace in a second browser window to see messages arrive live.', 'text');
+        '💡 Click **Explain** on the snippet above, post your own with **Share code**, or open this workspace in a second window to watch messages arrive live.', 'text');
 
     return workspace.id;
 }
