@@ -1,939 +1,316 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
+import dynamic from 'next/dynamic';
 import * as data from '@/lib/data';
+import { highlightCode } from '@/lib/highlight';
+import AuthDialog, { type AuthMode } from '@/components/AuthDialog';
+import { Logo } from '@/components/ui/Brand';
+import {
+    ArrowRightIcon, CodeIcon, DatabaseIcon, GitHubIcon, KeyIcon, LockIcon, SparklesIcon, ZapIcon,
+} from '@/components/ui/icons';
 
-type AuthMode = 'login' | 'register' | 'invite';
+const REPO_URL = 'https://github.com/shihabcodes/DevChat';
+
+// Client-only: sample timestamps are relative to "now" and formatted in the visitor's locale.
+const ProductPreview = dynamic(() => import('@/components/landing/ProductPreview'), {
+    ssr: false,
+    loading: () => <div className="h-[600px] rounded-2xl border border-line-strong bg-bg" />,
+});
+
+const POLICY_SQL = `-- Members can read messages in their workspace's channels
+create policy "members read messages" on public.messages
+  for select to authenticated
+  using (private.is_channel_member(channel_id));
+
+-- ...and can only post as themselves
+create policy "members post as themselves" on public.messages
+  for insert to authenticated
+  with check (user_id = (select auth.uid())
+              and private.is_channel_member(channel_id));`;
+
+const FEATURES = [
+    {
+        icon: ZapIcon,
+        title: 'Real-time by default',
+        body: 'Messages, typing and presence sync live over WebSockets. Sends are optimistic, and anything you miss while offline is backfilled when you reconnect.',
+    },
+    {
+        icon: CodeIcon,
+        title: 'Code is a first-class message',
+        body: 'Write snippets in a Monaco editor and read them with the same highlighting engine as VS Code, across 20 languages.',
+    },
+    {
+        icon: SparklesIcon,
+        title: 'AI that stays in the thread',
+        body: 'Explanations stream in under the snippet using your own OpenAI key. Once generated, they’re cached for everyone in the channel.',
+    },
+];
+
+const UNDER_THE_HOOD = [
+    { icon: LockIcon, text: 'Row-level security on every table, keyed on workspace membership' },
+    { icon: DatabaseIcon, text: 'A SQL test suite runs 35 allow/deny checks against the real database' },
+    { icon: ZapIcon, text: 'Rate limits enforced by Postgres triggers, not middleware' },
+    { icon: KeyIcon, text: 'Bring-your-own AI keys, encrypted server-side with AES-256-GCM' },
+];
+
+function StaticCode({ code, language }: { code: string; language: string }) {
+    const [html, setHtml] = useState<string | null>(null);
+    useEffect(() => { highlightCode(code, language).then(setHtml); }, [code, language]);
+    return (
+        <div className="overflow-hidden rounded-xl border border-line bg-surface">
+            <div className="flex h-9 items-center border-b border-line px-4 font-mono text-[11px] text-fg-subtle">
+                supabase/migrations/…_core_schema.sql
+            </div>
+            <div className="overflow-x-auto px-4 py-4 text-[12.5px] leading-[1.7]">
+                {html ? (
+                    <div className="shiki-host" dangerouslySetInnerHTML={{ __html: html }} />
+                ) : (
+                    <pre className="font-mono text-fg-muted"><code>{code}</code></pre>
+                )}
+            </div>
+        </div>
+    );
+}
 
 export default function Home() {
     const router = useRouter();
-    const [mode, setMode] = useState<AuthMode>('login');
-    const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-    const [email, setEmail] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [displayName, setDisplayName] = useState<string>('');
-    const [inviteCode, setInviteCode] = useState<string>('');
-    const [error, setError] = useState<string>('');
-    const [notice, setNotice] = useState<string>('');
-    const [loading, setLoading] = useState<boolean>(false);
-    const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
-    const [demoLoading, setDemoLoading] = useState<boolean>(false);
+    const [authOpen, setAuthOpen] = useState(false);
+    const [authMode, setAuthMode] = useState<AuthMode>('login');
+    const [authError, setAuthError] = useState<string | undefined>();
+    const [signedIn, setSignedIn] = useState(false);
+    const [demoLoading, setDemoLoading] = useState(false);
 
-    // Interactive Preview Mock State
-    const [activeMockChannel, setActiveMockChannel] = useState<string>('general');
-    const [activeMockTab, setActiveMockTab] = useState<'chat' | 'ai' | 'findings'>('chat');
-    const [mockExplaining, setMockExplaining] = useState<boolean>(false);
-    const [mockExplanation, setMockExplanation] = useState<string | null>(null);
-    const [mockCopied, setMockCopied] = useState<boolean>(false);
-    const explainTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    const goToWorkspace = async () => {
+    const goToWorkspace = useCallback(async () => {
         const user = await data.getCurrentUser();
         if (!user) throw new Error('Could not load your profile. Please try again.');
         const workspace = await data.ensureWorkspace(user);
         router.push(`/workspace/${workspace.id}`);
-    };
+    }, [router]);
 
-    // Already signed in (including arriving from an email confirmation link)?
+    // Signed-in visitors see "Open app"; arriving from an email confirmation link goes straight in.
     useEffect(() => {
-        data.getCurrentUser()
-            .then((user) => (user ? goToWorkspace() : setCheckingAuth(false)))
-            .catch(() => setCheckingAuth(false));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        data.getCurrentUser().then((user) => {
+            if (!user) return;
+            setSignedIn(true);
+            if (window.location.hash.includes('access_token')) goToWorkspace().catch(() => {});
+        }).catch(() => {});
+    }, [goToWorkspace]);
+
+    const openAuth = useCallback((mode: AuthMode, error?: string) => {
+        setAuthMode(mode);
+        setAuthError(error);
+        setAuthOpen(true);
     }, []);
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Ignore keyboard shortcuts when typing in inputs or when modal is open
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-                if (e.key === 'Escape') setAuthModalOpen(false);
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                setAuthModalOpen(false);
-            } else if ((e.key === 'd' || e.key === 'D') && !authModalOpen) {
-                e.preventDefault();
-                handleTryDemo();
-            } else if ((e.key === 'l' || e.key === 'L') && !authModalOpen) {
-                e.preventDefault();
-                setMode('login');
-                setAuthModalOpen(true);
-            } else if ((e.key === 'c' || e.key === 'C') && !authModalOpen) {
-                e.preventDefault();
-                setMode('register');
-                setAuthModalOpen(true);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [authModalOpen]);
-
-    const errorText = (err: unknown, fallback: string) =>
-        err instanceof Error && err.message ? err.message : fallback;
-
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setError('');
-        setNotice('');
-        setLoading(true);
-        try {
-            if (mode === 'register') {
-                const { needsConfirmation } = await data.signUp(email, password, displayName);
-                if (needsConfirmation) {
-                    setNotice(`We sent a confirmation link to ${email}. Click it to finish signing up.`);
-                    return;
-                }
-            } else {
-                await data.signIn(email, password);
-            }
-            await goToWorkspace();
-        } catch (err) {
-            setError(errorText(err, 'Authentication failed'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-        setError('');
-        setLoading(true);
-        try {
-            if (!credentialResponse.credential) throw new Error('Missing Google credential');
-            await data.signInWithGoogleIdToken(credentialResponse.credential);
-            await goToWorkspace();
-        } catch (err) {
-            setError(errorText(err, 'Google login failed'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleGoogleError = () => setError('Google Login Failed');
-
-    const handleJoinWorkspace = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-        try {
-            if (!(await data.getCurrentUser())) {
-                throw new Error('Sign in or create an account first, then join with the invite code.');
-            }
-            const workspace = await data.joinWorkspace(inviteCode);
-            router.push(`/workspace/${workspace.id}`);
-        } catch (err) {
-            setError(errorText(err, 'Invalid invite code'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleTryDemo = async () => {
-        setError('');
+    const startDemo = useCallback(async () => {
+        if (demoLoading) return;
         setDemoLoading(true);
         try {
             const workspaceId = await data.startDemo();
             router.push(`/workspace/${workspaceId}`);
         } catch (err) {
             setDemoLoading(false);
-            setError(errorText(err, 'Could not start the demo. Please try again.'));
-            setAuthModalOpen(true);
+            openAuth('login', err instanceof Error ? err.message : 'Could not start the demo. Please try again.');
         }
-    };
+    }, [demoLoading, openAuth, router]);
 
-    const triggerMockExplain = () => {
-        if (mockExplanation) {
-            setMockExplanation(null);
-            return;
-        }
-        setMockExplaining(true);
-        setMockExplanation('');
+    // Keyboard shortcuts: D = demo, L = sign in, C = create account.
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (authOpen || e.metaKey || e.ctrlKey || e.altKey || target.closest('input, textarea, select, [contenteditable]')) return;
+            const key = e.key.toLowerCase();
+            if (key === 'd') startDemo();
+            else if (key === 'l') openAuth('login');
+            else if (key === 'c') openAuth('register');
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [authOpen, openAuth, startDemo]);
 
-        const fullText = "This Rust struct implements a token-bucket rate limiter. Key observations:\n\n1. Atomic Operations: Replacing Mutex<usize> with AtomicUsize reduces lock contention under high concurrency.\n2. Monotonic Clock: Using Instant::now() avoids wall-clock drift issues during NTP adjustments.\n3. Refill is computed lazily from elapsed time, so there is no background timer.";
-        let currentIdx = 0;
-
-        if (explainTimerRef.current) clearInterval(explainTimerRef.current);
-        explainTimerRef.current = setInterval(() => {
-            currentIdx += 4;
-            if (currentIdx >= fullText.length) {
-                setMockExplanation(fullText);
-                setMockExplaining(false);
-                if (explainTimerRef.current) clearInterval(explainTimerRef.current);
-            } else {
-                setMockExplanation(fullText.slice(0, currentIdx));
-            }
-        }, 30);
-    };
-
-    const handleCopyMockCode = () => {
-        navigator.clipboard.writeText(`pub struct TokenBucket {\n    capacity: usize,\n    available: usize,\n    refill_rate: Duration,\n    last_refill: Instant,\n}`);
-        setMockCopied(true);
-        setTimeout(() => setMockCopied(false), 2000);
-    };
-
-    if (checkingAuth) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-black">
-                <div className="skeleton w-[180px] h-8 rounded-lg animate-pulse" />
-            </div>
-        );
-    }
+    const demoButton = (size: 'lg' | 'md' = 'lg') => (
+        <button type="button" onClick={startDemo} disabled={demoLoading} className={`btn btn-primary ${size === 'lg' ? 'btn-lg' : ''}`}>
+            {demoLoading ? 'Setting up your workspace…' : 'Try the live demo'}
+            {!demoLoading && <ArrowRightIcon size={16} />}
+        </button>
+    );
 
     return (
-        <div className="w-full min-h-screen flex flex-col items-center bg-black text-[#ededed] relative overflow-x-hidden selection:bg-[#52a8ff]/25 selection:text-white">
-            {/* Background Grid */}
-            <div className="pointer-events-none fixed inset-0 -z-10 grid-bg opacity-60"></div>
-
-            {/* Navigation Bar (Interfere Minimalist Style) */}
-            <header className="sticky top-0 z-40 w-full border-b border-white/[0.08] bg-black/80 backdrop-blur-md">
-                <div className="max-w-7xl w-full mx-auto px-4 sm:px-8 h-16 flex items-center justify-between">
-                    {/* Brand Wordmark + Version */}
-                    <div className="flex items-center gap-3">
-                        <a href="#" className="flex items-center gap-2.5 group">
-                            <span className="w-7 h-7 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-mono font-bold group-hover:border-[#52a8ff]/40 transition-colors shadow-[0_0_12px_rgba(82,168,255,0.15)]">
-                                &lt;/&gt;
-                            </span>
-                            <span className="font-semibold text-sm tracking-tight text-white flex items-center">
-                                DevChat<span className="text-[#52a8ff]">.</span>
-                            </span>
+        <div className="min-h-dvh overflow-x-clip">
+            {/* Nav */}
+            <header className="sticky top-0 z-30 border-b border-line/70 bg-bg/80 backdrop-blur-md">
+                <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 sm:px-6">
+                    <a href="#top" aria-label="DevChat home"><Logo /></a>
+                    <nav className="hidden items-center gap-7 text-sm text-fg-muted md:flex">
+                        <a href="#features" className="hover:text-fg">Features</a>
+                        <a href="#under-the-hood" className="hover:text-fg">Under the hood</a>
+                        <a href={REPO_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-fg">
+                            <GitHubIcon size={15} /> Source
                         </a>
-                    </div>
-
-                    {/* Center Navigation Links */}
-                    <nav className="hidden md:flex items-center gap-7 text-xs font-normal text-[#a1a1aa]">
-                        <a href="#preview" className="hover:text-white transition-colors">Workspace</a>
-                        <a href="#features" className="hover:text-white transition-colors">Features</a>
-                        <a href="#architecture" className="hover:text-white transition-colors">Architecture</a>
-                        <a href="https://github.com/shihabcodes/DevChat" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Docs</a>
                     </nav>
-
-                    {/* Right Actions with Keyboard Badges */}
-                    <div className="flex items-center gap-3">
-                        <a
-                            href="https://github.com/shihabcodes/DevChat"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#27272a] bg-[#0c0c0e] hover:bg-[#141416] hover:border-[#3f3f46] text-[#a1a1aa] hover:text-white text-xs font-mono transition-all"
-                        >
-                            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                            </svg>
-                            <span>Star on GitHub</span>
-                        </a>
-
-                        <button
-                            onClick={() => { setMode('login'); setAuthModalOpen(true); }}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#a1a1aa] hover:text-white transition-colors px-2.5 py-1.5"
-                        >
-                            <span>Login</span>
-                            <kbd className="int-kbd hidden sm:inline-flex">L</kbd>
-                        </button>
-
-                        <button
-                            onClick={handleTryDemo}
-                            disabled={demoLoading}
-                            className="cta-primary inline-flex items-center gap-1.5 px-4 py-1.5 sm:py-2 rounded-full text-xs font-semibold disabled:opacity-60"
-                        >
-                            <span>{demoLoading ? 'Launching…' : 'Try Demo'}</span>
-                            <kbd className="int-kbd bg-black/15 text-black hidden sm:inline-flex">D</kbd>
-                            <span>→</span>
-                        </button>
+                    <div className="flex items-center gap-2">
+                        {signedIn ? (
+                            <button type="button" onClick={() => goToWorkspace()} className="btn btn-sm btn-primary">
+                                Open app <ArrowRightIcon size={14} />
+                            </button>
+                        ) : (
+                            <>
+                                <button type="button" onClick={() => openAuth('login')} className="btn btn-sm btn-ghost">Sign in</button>
+                                <button type="button" onClick={startDemo} disabled={demoLoading} className="btn btn-sm btn-primary">
+                                    {demoLoading ? 'Starting…' : 'Try demo'}
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
 
-            {/* HERO SECTION (Interfere 2-Column Editorial Layout) */}
-            <section className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-16 sm:pt-24 pb-28 sm:pb-36 relative">
-                {/* Top Row: Headline on Left, Subtitle & CTAs on Right */}
-                <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8 lg:gap-14 mb-14 sm:mb-20">
-                    {/* Left Column: Editorial Headline */}
-                    <div className="flex-1 max-w-2xl">
-                        {/* Status Pill */}
-                        <div className="spark-badge inline-flex items-center gap-2 h-7 px-3.5 rounded-full text-xs font-mono text-white mb-5 cursor-default">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_8px_#10b981] animate-pulse"></span>
-                            <span className="font-medium tracking-wide text-white">DEVCHAT 2.0</span>
-                            <span className="text-[#71717a]">·</span>
-                            <span className="text-[#a1a1aa]">IN-LINE AI MESSENGER</span>
-                        </div>
-
-                        {/* Editorial Typography: Modern Sans + Italic Serif (2 Clean Lines) */}
-                        <h1 className="text-4xl sm:text-6xl lg:text-7xl font-medium tracking-tight text-white leading-[1.06]">
-                            Developer chat that{' '}<br className="hidden sm:block" />
-                            never{' '}
-                            <span className="font-editorial italic font-normal text-white text-[1.14em]">
-                                loses flow.
-                            </span>
-                        </h1>
-                    </div>
-
-                    {/* Right Column: Narrative Subtitle & Dual Action Buttons (Aligned to Bottom Baseline) */}
-                    <div className="flex flex-col items-start justify-between gap-5 max-w-md pb-1">
-                        <p className="text-base sm:text-lg text-[#a1a1aa] leading-relaxed font-normal">
-                            Share code with syntax highlighting, get streamed AI explanations right in the thread, and keep your team in real-time channels. No tab switching.
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-3.5 pt-1">
-                            <button
-                                onClick={handleTryDemo}
-                                disabled={demoLoading}
-                                className="cta-primary h-11 px-6 rounded-full text-xs sm:text-sm font-semibold flex items-center gap-2 disabled:opacity-60"
-                            >
-                                <span>{demoLoading ? 'Launching…' : 'Try Live Demo'}</span>
-                                <kbd className="int-kbd bg-black/15 text-black">D</kbd>
-                                <span>→</span>
-                            </button>
-
-                            <button
-                                onClick={() => { setMode('register'); setAuthModalOpen(true); }}
-                                className="cta-secondary h-11 px-6 rounded-full text-xs sm:text-sm font-medium flex items-center gap-2"
-                            >
-                                <span>Create Account</span>
-                                <kbd className="int-kbd">C</kbd>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* PRODUCT UI MOCKUP WINDOW (Interfere Centerpiece with Sunset Aurora Glow) */}
-                <div id="preview" className="relative w-full mt-4 sm:mt-8">
-                    {/* Interfere Signature Multi-Hue Sunset Aurora Glow */}
-                    <div className="aurora-glow"></div>
-
-                    {/* Floating Product Container */}
-                    <div className="relative w-full rounded-2xl interfere-window bg-[#09090b]/95 backdrop-blur-2xl border border-white/[0.09] overflow-hidden">
-                        {/* Top Window Bar with Traffic Lights & Interfere Tabs */}
-                        <div className="px-5 py-3.5 bg-[#111114] border-b border-white/[0.08] flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <span className="w-3 h-3 rounded-full bg-[#ff5f56]/90 shadow-[0_0_6px_#ff5f56]/40 shrink-0"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#ffbd2e]/90 shadow-[0_0_6px_#ffbd2e]/40 shrink-0"></span>
-                                <span className="w-3 h-3 rounded-full bg-[#27c93f]/90 shadow-[0_0_6px_#27c93f]/40 shrink-0"></span>
-                                <span className="text-xs font-mono text-[#8e8e93] ml-2 truncate hidden md:inline">
-                                    devchat : #general / limiter.rs
-                                </span>
-                            </div>
-
-                            {/* Center Tabs matching Interfere (Activity, Sessions, Findings) */}
-                            <div className="flex items-center gap-1 bg-[#1c1c21] p-1 rounded-lg border border-white/[0.12] text-xs font-mono shrink-0 shadow-inner">
-                                <button
-                                    onClick={() => setActiveMockTab('chat')}
-                                    className={`px-3 py-1 rounded-md transition-all ${
-                                        activeMockTab === 'chat'
-                                            ? 'bg-[#2e2e36] text-white font-semibold border border-white/[0.16] shadow-sm'
-                                            : 'text-[#8e8e93] hover:text-white'
-                                    }`}
-                                >
-                                    Chat &amp; Code
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setActiveMockTab('ai');
-                                        if (!mockExplanation) triggerMockExplain();
-                                    }}
-                                    className={`px-3 py-1 rounded-md transition-all ${
-                                        activeMockTab === 'ai'
-                                            ? 'bg-[#2e2e36] text-white font-semibold border border-white/[0.16] shadow-sm'
-                                            : 'text-[#8e8e93] hover:text-white'
-                                    }`}
-                                >
-                                    AI Insights
-                                </button>
-                                <button
-                                    onClick={() => setActiveMockTab('findings')}
-                                    className={`px-3 py-1 rounded-md transition-all hidden sm:block ${
-                                        activeMockTab === 'findings'
-                                            ? 'bg-[#2e2e36] text-white font-semibold border border-white/[0.16] shadow-sm'
-                                            : 'text-[#8e8e93] hover:text-white'
-                                    }`}
-                                >
-                                    Findings (3)
-                                </button>
-                            </div>
-
-                            <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#10b981]/10 border border-[#10b981]/25 shrink-0">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-pulse"></span>
-                                <span className="text-[11px] font-mono text-[#10b981] font-medium hidden sm:inline">
-                                    Live
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Workspace Body */}
-                        <div className="flex flex-col md:flex-row">
-                            {/* Left Narrow Icon Strip (Interfere Style Rail) */}
-                            <div className="hidden lg:flex w-12 border-r border-white/[0.06] bg-[#070708] py-4 flex-col items-center justify-between shrink-0">
-                                <div className="space-y-4 flex flex-col items-center text-[#71717a]">
-                                    <div className="w-7 h-7 rounded-lg bg-white/[0.08] text-[#ededed] flex items-center justify-center text-xs">
-                                        💬
-                                    </div>
-                                    <div className="w-7 h-7 rounded-lg hover:bg-white/[0.04] text-[#71717a] hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors">
-                                        ⚡
-                                    </div>
-                                    <div className="w-7 h-7 rounded-lg hover:bg-white/[0.04] text-[#71717a] hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors">
-                                        📁
-                                    </div>
-                                    <div className="w-7 h-7 rounded-lg hover:bg-white/[0.04] text-[#71717a] hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors">
-                                        ✨
-                                    </div>
-                                </div>
-                                <div className="w-7 h-7 rounded-lg hover:bg-white/[0.04] text-[#71717a] hover:text-white flex items-center justify-center text-xs cursor-pointer transition-colors">
-                                    ⚙️
-                                </div>
-                            </div>
-
-                            {/* Middle Channels Sidebar */}
-                            <div className="hidden md:block md:w-60 border-r border-white/[0.06] bg-[#09090b] p-4 space-y-6 shrink-0">
-                                <div>
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2 font-semibold">
-                                        Channels
-                                    </div>
-                                    <div className="space-y-1">
-                                        {[
-                                            { id: 'general', name: 'general', topic: 'team discussion' },
-                                            { id: 'ai-codegen', name: 'ai-codegen', topic: 'LLM agents' },
-                                            { id: 'architecture', name: 'architecture', topic: 'RFCs & design' }
-                                        ].map((ch) => (
-                                            <button
-                                                key={ch.id}
-                                                onClick={() => setActiveMockChannel(ch.id)}
-                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-mono transition-all text-left ${
-                                                    activeMockChannel === ch.id
-                                                        ? 'bg-[#18181b] text-white border border-white/[0.08] font-medium shadow-sm'
-                                                        : 'text-[#71717a] hover:text-[#ededed] hover:bg-[#121214]'
-                                                }`}
-                                            >
-                                                <div className="flex items-center gap-2 truncate">
-                                                    <span className="text-[#52a8ff] font-bold">#</span>
-                                                    <span className="truncate">{ch.name}</span>
-                                                </div>
-                                                <span className="text-[9px] text-[#565656] hidden xl:inline">{ch.topic}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] px-2 mb-2 font-semibold">
-                                        Team Members (3)
-                                    </div>
-                                    <div className="space-y-2 text-xs">
-                                        <div className="flex items-center justify-between px-2 py-1 rounded-md bg-white/[0.02] text-[#ededed]">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
-                                                <span className="font-medium">Alex</span>
-                                            </div>
-                                            <span className="text-[10px] text-[#71717a] font-mono">Founding Eng</span>
-                                        </div>
-                                        <div className="flex items-center justify-between px-2 py-1 rounded-md text-[#ededed]">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
-                                                <span className="font-medium">Sarah</span>
-                                            </div>
-                                            <span className="text-[10px] text-[#71717a] font-mono">Tech Lead</span>
-                                        </div>
-                                        <div className="flex items-center justify-between px-2 py-1 rounded-md text-[#ededed]">
-                                            <div className="flex items-center gap-2">
-                                                <span className="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
-                                                <span className="font-medium">Shihab</span>
-                                            </div>
-                                            <span className="text-[10px] text-[#71717a] font-mono">AI Engineer</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="pt-3 border-t border-white/[0.06] text-xs font-mono text-[#52a8ff] flex items-center gap-2 px-1">
-                                    <span className="w-2 h-2 rounded-full bg-[#52a8ff] shadow-[0_0_8px_#52a8ff] animate-pulse"></span>
-                                    <span className="font-medium">GPT-4o-mini Active</span>
-                                </div>
-                            </div>
-
-                            {/* Right Chat Feed */}
-                            <div className="flex-1 bg-[#030304] p-5 sm:p-7 flex flex-col justify-between gap-6">
-                                <div className="space-y-5">
-                                    {/* Interfere Issue / Channel Subhead Bar */}
-                                    <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] text-xs">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[#52a8ff] font-bold">#</span>
-                                            <span className="font-semibold text-white">general</span>
-                                            <span className="text-[#71717a]">·</span>
-                                            <span className="text-[#a1a1aa] font-mono text-[11px]">Token-Bucket Rate Limiter Implementation</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/[0.05] border border-white/[0.08] text-[#10b981]">
-                                                ● Active
-                                            </span>
-                                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/[0.05] border border-white/[0.08] text-[#a1a1aa] hidden sm:inline">
-                                                Assigned: Shihab
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Message 1 */}
-                                    <div className="flex gap-3 sm:gap-3.5 items-start">
-                                        <div className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#52a8ff] shrink-0 mt-0.5 shadow-sm">
-                                            A
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 text-xs mb-1.5">
-                                                <span className="font-semibold text-white">Alex</span>
-                                                <span className="text-[10px] text-[#71717a] font-mono">10:42 AM</span>
-                                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#18181b] text-[#52a8ff] font-mono">Rust Pro</span>
-                                            </div>
-                                            <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-3">
-                                                Token-bucket rate limiter for our WebSocket proxy:
-                                            </p>
-
-                                            {/* Code Snippet Box with Syntax Colors */}
-                                            <div className="rounded-xl border border-white/[0.08] bg-[#0c0c0e] overflow-hidden shadow-lg">
-                                                <div className="px-4 py-2 bg-[#141416] border-b border-white/[0.06] flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] font-mono text-[#52a8ff] uppercase font-bold tracking-wider">rust</span>
-                                                        <span className="text-[10px] font-mono text-[#565656]">src/limiter.rs</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2.5">
-                                                        <button
-                                                            onClick={triggerMockExplain}
-                                                            className="px-2.5 py-1 rounded-md text-[11px] font-mono font-medium bg-[#52a8ff]/10 text-[#52a8ff] hover:bg-[#52a8ff]/20 border border-[#52a8ff]/30 transition-all flex items-center gap-1.5 shadow-[0_0_12px_rgba(82,168,255,0.15)]"
-                                                        >
-                                                            <span>✨</span>
-                                                            <span>{mockExplaining ? 'Streaming…' : mockExplanation ? 'Hide AI' : 'Explain with AI'}</span>
-                                                        </button>
-                                                        <button
-                                                            onClick={handleCopyMockCode}
-                                                            className="text-[11px] font-mono text-[#71717a] hover:text-white transition-colors px-2 py-1 rounded hover:bg-[#1c1c1f]"
-                                                        >
-                                                            {mockCopied ? '✓ Copied' : 'Copy'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div className="p-4 sm:p-5 font-mono text-xs sm:text-sm leading-relaxed overflow-x-auto flex flex-col md:flex-row gap-5 text-[#ededed]">
-                                                    <div className="flex gap-4 flex-1">
-                                                        <div className="text-[#52525b] select-none text-right font-normal space-y-0.5 shrink-0">
-                                                            <div>1</div>
-                                                            <div>2</div>
-                                                            <div>3</div>
-                                                            <div>4</div>
-                                                            <div>5</div>
-                                                            <div>6</div>
-                                                        </div>
-                                                        <pre className="whitespace-pre font-normal flex-1">
-                                                            <span className="text-[#f43f5e]">pub struct</span> <span className="text-[#38bdf8]">TokenBucket</span> &#123;{'\n'}
-                                                            {'    '}<span className="text-[#e2e8f0]">capacity</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
-                                                            {'    '}<span className="text-[#e2e8f0]">available</span>: <span className="text-[#fbbf24]">usize</span>,{'\n'}
-                                                            {'    '}<span className="text-[#e2e8f0]">refill_rate</span>: <span className="text-[#38bdf8]">Duration</span>,{'\n'}
-                                                            {'    '}<span className="text-[#e2e8f0]">last_refill</span>: <span className="text-[#38bdf8]">Instant</span>,{'\n'}
-                                                            &#125;
-                                                        </pre>
-                                                    </div>
-                                                    <div className="hidden md:flex flex-col justify-between py-1 px-4 border-l border-white/[0.08] text-[11px] font-mono text-[#a1a1aa] min-w-[210px] shrink-0 bg-white/[0.01] rounded-r-lg">
-                                                        <div className="space-y-2">
-                                                            <div className="text-[10px] text-[#71717a] uppercase tracking-wider font-semibold">Telemetry</div>
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-[#8e8e93]">Refill Rate:</span>
-                                                                <span className="text-[#10b981] font-semibold">100/sec</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-[#8e8e93]">Time Complexity:</span>
-                                                                <span className="text-white">O(1)</span>
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-xs">
-                                                                <span className="text-[#8e8e93]">Thread Safety:</span>
-                                                                <span className="text-[#52a8ff]">Lock-free</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="pt-2 border-t border-white/[0.06] text-[10px] text-[#71717a] flex items-center gap-1.5">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                                                            <span>Illustrative example</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Streamed AI Explanation Card */}
-                                            {mockExplanation !== null && (
-                                                <div className="mt-4 ai-card animate-fade-in text-xs font-mono text-[#d4d4d8] leading-relaxed shadow-lg">
-                                                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#222226] text-[11px] text-[#52a8ff] uppercase tracking-wider font-semibold">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span>✨</span>
-                                                            <span>In-Line AI Explanation</span>
-                                                        </div>
-                                                        <button onClick={() => setMockExplanation(null)} className="text-[#71717a] hover:text-white px-1">✕</button>
-                                                    </div>
-                                                    <div className="whitespace-pre-wrap leading-relaxed">
-                                                        {mockExplanation}
-                                                        {mockExplaining && <span className="inline-block w-2 h-4 bg-[#52a8ff] ml-1 animate-pulse"></span>}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Message 2 */}
-                                    <div className="flex gap-3 sm:gap-3.5 items-start">
-                                        <div className="w-8 h-8 rounded-lg bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xs font-bold text-[#10b981] shrink-0 mt-0.5 shadow-sm">
-                                            S
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 text-xs mb-1">
-                                                <span className="font-semibold text-white">Sarah</span>
-                                                <span className="text-[10px] text-[#71717a] font-mono">10:43 AM</span>
-                                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#18181b] text-[#10b981] font-mono">Benchmark</span>
-                                            </div>
-                                            <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed">
-                                                Nice, the lazy refill is way simpler than a timer. Shipping it.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Typing Indicator */}
-                                    <div className="flex items-center gap-2 text-xs text-[#71717a] pl-11">
-                                        <span>Alex is typing</span>
-                                        <span className="flex gap-1">
-                                            <span className="typing-dot"></span>
-                                            <span className="typing-dot"></span>
-                                            <span className="typing-dot"></span>
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {/* Mock Input Bar */}
-                                <div className="pt-4 border-t border-white/[0.06] flex items-center gap-3">
-                                    <input
-                                        type="text"
-                                        readOnly
-                                        value="Message #general..."
-                                        className="flex-1 px-4 py-2.5 rounded-xl bg-[#0e0e11] border border-white/[0.08] text-xs font-mono text-[#71717a] outline-none min-w-0"
-                                    />
-                                    <button
-                                        onClick={handleTryDemo}
-                                        className="cta-primary px-5 py-2.5 rounded-xl text-xs font-semibold shrink-0"
-                                    >
-                                        <span className="sm:hidden">Launch →</span>
-                                        <span className="hidden sm:inline">Launch Full App →</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </section>
-
-            {/* FEATURES SECTION (Interfere Minimalist Bento Grid) */}
-            <section id="features" className="w-full max-w-7xl mx-auto px-4 sm:px-8 pt-32 pb-32 border-t border-white/[0.08] relative">
-                {/* Section Header */}
-                <div className="text-center max-w-3xl mx-auto mb-16">
-                    <div className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#52a8ff]"></span>
-                        <span>ENGINEERED FOR TEAMS</span>
-                    </div>
-                    <h2 className="text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white mb-4">
-                        Everything developers need.{' '}
-                        <span className="font-editorial italic font-normal text-[#ededed] text-[1.14em]">
-                            Zero fluff.
-                        </span>
-                    </h2>
-                    <p className="text-sm sm:text-base text-[#a1a1aa] leading-relaxed max-w-2xl mx-auto font-normal text-balance">
-                        Built from the ground up for high concurrency, low latency, and developer security.
-                    </p>
-                </div>
-
-                {/* Bento Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mx-auto mb-16">
-                    <div className="yc-card p-7 sm:p-8 rounded-2xl border border-white/[0.08] bg-[#09090b]">
-                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-base mb-4 shadow-[0_0_12px_rgba(82,168,255,0.15)]">
-                            ⚡
-                        </div>
-                        <h3 className="text-base font-bold text-white mb-2">Real-Time by Default</h3>
-                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Messages, typing indicators, and presence stream over Supabase Realtime. Sends are optimistic with retry, and missed messages are backfilled after a reconnect.
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Supabase Realtime</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Presence</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">Optimistic UI</span>
-                        </div>
-                    </div>
-
-                    <div className="yc-card p-7 sm:p-8 rounded-2xl border border-white/[0.08] bg-[#09090b]">
-                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#10b981] text-base mb-4 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-                            ✨
-                        </div>
-                        <h3 className="text-base font-bold text-white mb-2">In-Line Streamed AI</h3>
-                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Click &quot;Explain&quot; on any code snippet to receive token-by-token breakdowns directly in chat without context switching or leaving your flow.
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">OpenAI BYOK</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">SSE Streaming</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#52a8ff]">Snippet Cache</span>
-                        </div>
-                    </div>
-
-                    <div className="yc-card p-7 sm:p-8 rounded-2xl border border-white/[0.08] bg-[#09090b]">
-                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#38bdf8] text-base mb-4 shadow-[0_0_12px_rgba(56,189,248,0.15)]">
-                            🖥️
-                        </div>
-                        <h3 className="text-base font-bold text-white mb-2">Real Syntax Highlighting</h3>
-                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Code is highlighted with Shiki, the engine behind VS Code's themes, across 20 languages, and written in a Monaco editor.
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Shiki Engine</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Monaco Editor</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">20 Languages</span>
-                        </div>
-                    </div>
-
-                    <div className="yc-card p-7 sm:p-8 rounded-2xl border border-white/[0.08] bg-[#09090b]">
-                        <div className="w-10 h-10 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#f59e0b] text-base mb-4 shadow-[0_0_12px_rgba(245,158,11,0.15)]">
-                            🔒
-                        </div>
-                        <h3 className="text-base font-bold text-white mb-2">Secure by Design</h3>
-                        <p className="text-xs sm:text-sm text-[#a1a1a1] leading-relaxed mb-4">
-                            Row level security in Postgres decides who sees what. Your OpenAI key is encrypted with AES-256-GCM and never sent back to the browser.
-                        </p>
-                        <div className="flex flex-wrap gap-2 text-[10px] font-mono text-[#71717a]">
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">Postgres RLS</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#ededed]">BYO Key</span>
-                            <span className="px-2 py-0.5 rounded bg-[#141414] border border-[#27272a] text-[#10b981]">Instant Guest</span>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Architecture Specifications */}
-                <div id="architecture" className="w-full mx-auto rounded-2xl border border-white/[0.08] bg-[#09090b] p-7 sm:p-8 mb-16 shadow-xl">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.06]">
-                        <div>
-                            <div className="font-mono text-[11px] uppercase tracking-wider text-[#52a8ff] mb-1">
-                                FULL-STACK SPECIFICATION
-                            </div>
-                            <h3 className="text-base sm:text-lg font-bold text-white">
-                                How It's Built
-                            </h3>
-                        </div>
+            <main id="top">
+                {/* Hero */}
+                <section className="relative">
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute inset-x-0 -top-20 h-[520px] bg-[radial-gradient(ellipse_50%_60%_at_50%_0%,rgba(255,178,36,0.09),transparent_70%)]"
+                    />
+                    <div className="relative mx-auto max-w-6xl px-5 pt-20 text-center sm:px-6 sm:pt-28">
                         <a
-                            href="https://github.com/shihabcodes/DevChat"
+                            href={REPO_URL}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg border border-[#2e2e2e] bg-[#141414] hover:bg-[#1f1f1f] text-xs font-mono text-[#52a8ff] transition-colors self-start sm:self-auto"
+                            className="inline-flex items-center gap-2 rounded-full border border-line-strong bg-surface/60 px-3 py-1 text-xs text-fg-muted transition-colors hover:border-fg-subtle hover:text-fg"
                         >
-                            <span>Inspect Source Code</span>
-                            <span>↗</span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                            Open source · Next.js + Postgres
+                            <ArrowRightIcon size={12} />
                         </a>
+                        <h1 className="mx-auto mt-6 max-w-3xl text-balance text-[44px] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-6xl md:text-7xl">
+                            Team chat that speaks code.
+                        </h1>
+                        <p className="mx-auto mt-6 max-w-xl text-pretty text-base leading-relaxed text-fg-muted sm:text-lg">
+                            Share snippets with real syntax highlighting. Hit <span className="text-fg">Explain</span> and an AI walkthrough
+                            streams in right under the code, cached for the whole channel.
+                        </p>
+                        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            {demoButton()}
+                            <a href={REPO_URL} target="_blank" rel="noreferrer" className="btn btn-lg btn-secondary">
+                                <GitHubIcon size={16} /> View source
+                            </a>
+                        </div>
+                        <p className="mt-4 text-xs text-fg-subtle">
+                            No signup. You get a private workspace, deleted after 24 hours. <span className="hidden sm:inline">Or press <span className="kbd">D</span></span>
+                        </p>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 font-mono text-xs">
-                        <div className="space-y-1">
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Frontend</div>
-                            <div className="text-white font-medium text-sm">Next.js 15</div>
-                            <div className="text-[#71717a] text-[11px]">React 19, Shiki</div>
+                    <div className="relative mx-auto mt-16 max-w-6xl px-3 sm:px-6">
+                        <ProductPreview />
+                        <p className="mt-3 text-center text-xs text-fg-subtle">
+                            The real app components, rendering sample data. Type in it.
+                        </p>
+                    </div>
+                </section>
+
+                {/* Features */}
+                <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-5 py-28 sm:px-6">
+                    <h2 className="max-w-xl text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">
+                        Stop pasting code into Slack, then into ChatGPT.
+                    </h2>
+                    <p className="mt-4 max-w-xl text-fg-muted">
+                        The conversation and the code live in the same place, so the explanation can too.
+                    </p>
+                    <div className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+                        {FEATURES.map(({ icon: Icon, title, body }) => (
+                            <div key={title} className="bg-bg p-7">
+                                <Icon size={20} className="text-accent" />
+                                <h3 className="mt-5 font-semibold">{title}</h3>
+                                <p className="mt-2 text-sm leading-relaxed text-fg-muted">{body}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Under the hood */}
+                <section id="under-the-hood" className="scroll-mt-20 border-y border-line bg-panel">
+                    <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-28 sm:px-6 lg:grid-cols-2">
+                        <div>
+                            <p className="text-sm font-medium text-accent">Under the hood</p>
+                            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">
+                                No backend server. The database is the security layer.
+                            </h2>
+                            <p className="mt-4 leading-relaxed text-fg-muted">
+                                Instead of re-checking permissions in an API, every table has row-level security policies in Postgres.
+                                The browser can only ever see what the database allows, and a test suite proves it.
+                            </p>
+                            <ul className="mt-8 space-y-3.5">
+                                {UNDER_THE_HOOD.map(({ icon: Icon, text }) => (
+                                    <li key={text} className="flex items-start gap-3 text-sm text-fg-muted">
+                                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-line bg-surface text-fg">
+                                            <Icon size={13} />
+                                        </span>
+                                        {text}
+                                    </li>
+                                ))}
+                            </ul>
+                            <a href={`${REPO_URL}#engineering-highlights`} target="_blank" rel="noreferrer" className="mt-8 inline-flex items-center gap-1.5 text-sm font-medium text-fg hover:text-accent">
+                                Read the engineering notes <ArrowRightIcon size={14} />
+                            </a>
                         </div>
-                        <div className="space-y-1">
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Real-Time</div>
-                            <div className="text-white font-medium text-sm">Supabase Realtime</div>
-                            <div className="text-[#71717a] text-[11px]">Broadcast + Presence</div>
-                        </div>
-                        <div className="space-y-1">
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">AI Streaming</div>
-                            <div className="text-white font-medium text-sm">OpenAI (BYOK)</div>
-                            <div className="text-[#71717a] text-[11px]">SSE Streaming</div>
-                        </div>
-                        <div className="space-y-1">
-                            <div className="text-[#52a8ff] text-[10px] uppercase tracking-wider font-semibold">Datastore</div>
-                            <div className="text-white font-medium text-sm">Postgres</div>
-                            <div className="text-[#71717a] text-[11px]">Row Level Security</div>
+                        <div className="min-w-0">
+                            <StaticCode code={POLICY_SQL} language="sql" />
+                            <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line text-center">
+                                {[['35', 'policy tests'], ['0', 'servers to run'], ['$0', 'hosting / month']].map(([n, label]) => (
+                                    <div key={label} className="bg-surface px-3 py-4">
+                                        <dt className="sr-only">{label}</dt>
+                                        <dd className="text-xl font-semibold tracking-tight">{n}</dd>
+                                        <dd className="mt-0.5 text-xs text-fg-subtle">{label}</dd>
+                                    </div>
+                                ))}
+                            </dl>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Footer */}
-            <footer className="w-full border-t border-white/[0.08] bg-black py-10">
-                <div className="max-w-7xl w-full mx-auto px-6 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs font-mono text-[#71717a]">
+                {/* Final CTA */}
+                <section className="mx-auto max-w-6xl px-5 py-28 text-center sm:px-6">
+                    <h2 className="text-3xl font-semibold tracking-[-0.025em] sm:text-4xl">See it for yourself.</h2>
+                    <p className="mt-3 text-fg-muted">One click, about ten seconds, no account.</p>
+                    <div className="mt-8 flex justify-center">{demoButton()}</div>
+                    <p className="mt-6 text-sm text-fg-subtle">
+                        Already have an account?{' '}
+                        <button type="button" onClick={() => openAuth('login')} className="font-medium text-fg-muted hover:text-fg">Sign in</button>
+                        {' · '}
+                        <button type="button" onClick={() => openAuth('invite')} className="font-medium text-fg-muted hover:text-fg">Join with an invite code</button>
+                    </p>
+                </section>
+            </main>
+
+            <footer className="border-t border-line">
+                <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 text-sm text-fg-subtle sm:flex-row sm:px-6">
                     <div className="flex items-center gap-3">
-                        <span className="w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[#52a8ff] text-xs font-bold">
-                            &lt;/&gt;
+                        <Logo />
+                        <span>
+                            Built by{' '}
+                            <a href="https://github.com/shihabcodes" target="_blank" rel="noreferrer" className="text-fg-muted hover:text-fg">Shihab</a>
                         </span>
-                        <span className="text-[#ededed] font-medium">DevChat</span>
-                        <span>·</span>
-                        <span>shihabcodes/DevChat</span>
                     </div>
-                    <div className="flex items-center gap-6 text-[#a1a1aa]">
-                        <a href="https://github.com/shihabcodes/DevChat" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">GitHub</a>
-                        <a href="https://shihabcodes.github.io" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Shihab Portfolio</a>
-                        <a href="https://cal.com/shihabcodes/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">Book Intro</a>
+                    <div className="flex items-center gap-6">
+                        <a href={REPO_URL} target="_blank" rel="noreferrer" className="hover:text-fg">Source</a>
+                        <a href="https://shihabcodes.github.io" target="_blank" rel="noreferrer" className="hover:text-fg">Portfolio</a>
+                        <span>MIT License</span>
                     </div>
                 </div>
             </footer>
 
-            {/* Auth Modal */}
-            {authModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-                    <div
-                        className="w-full max-w-md rounded-2xl border border-[#2e2e2e] bg-[#0c0c0e] p-6 sm:p-8 shadow-2xl relative"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            onClick={() => setAuthModalOpen(false)}
-                            className="absolute top-4 right-4 text-[#71717a] hover:text-white text-sm"
-                            aria-label="Close"
-                        >
-                            ✕
-                        </button>
-
-                        <div className="mb-6">
-                            <h3 className="text-base font-bold text-white">
-                                {mode === 'login' ? 'Sign In to DevChat' : mode === 'register' ? 'Create an Account' : 'Join with Invite Code'}
-                            </h3>
-                            <p className="text-xs text-[#a1a1a1] mt-1">
-                                {mode === 'login' ? 'Access your engineering workspaces' : mode === 'register' ? 'Start collaborating with your team' : 'Enter the code from your workspace admin'}
-                            </p>
-                        </div>
-
-                        <div className="flex gap-1 mb-5 p-1 rounded-lg bg-[#141414] border border-[#1f1f1f]">
-                            <button
-                                onClick={() => { setMode('login'); setError(''); }}
-                                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                    mode === 'login' ? 'bg-[#262626] text-white' : 'text-[#71717a] hover:text-white'
-                                }`}
-                            >
-                                Sign In
-                            </button>
-                            <button
-                                onClick={() => { setMode('register'); setError(''); }}
-                                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                    mode === 'register' ? 'bg-[#262626] text-white' : 'text-[#71717a] hover:text-white'
-                                }`}
-                            >
-                                Sign Up
-                            </button>
-                            <button
-                                onClick={() => { setMode('invite'); setError(''); }}
-                                className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all ${
-                                    mode === 'invite' ? 'bg-[#262626] text-white' : 'text-[#71717a] hover:text-white'
-                                }`}
-                            >
-                                Invite Code
-                            </button>
-                        </div>
-
-                        {error && (
-                            <div className="px-3.5 py-2.5 rounded-lg bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#fca5a5] text-xs mb-4">
-                                {error}
-                            </div>
-                        )}
-
-                        {notice && (
-                            <div role="status" className="px-3.5 py-2.5 rounded-lg bg-[#10b981]/10 border border-[#10b981]/30 text-[#6ee7b7] text-xs mb-4">
-                                {notice}
-                            </div>
-                        )}
-
-                        {mode === 'invite' ? (
-                            <form onSubmit={handleJoinWorkspace} className="space-y-4">
-                                <div>
-                                    <label className="block text-[11px] font-mono uppercase tracking-wider text-[#a1a1a1] mb-1.5">
-                                        Invite Code
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={inviteCode}
-                                        onChange={(e) => setInviteCode(e.target.value)}
-                                        placeholder="paste-invite-code-here"
-                                        required
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#2e2e2e] bg-[#141414] text-white text-xs font-mono outline-none focus:border-[#52a8ff] transition-all"
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    disabled={loading || !inviteCode}
-                                    className="w-full py-2.5 rounded-xl bg-[#52a8ff] text-black text-xs font-semibold hover:bg-[#60a5fa] transition-all disabled:opacity-50"
-                                >
-                                    {loading ? 'Joining…' : 'Join Workspace'}
-                                </button>
-                            </form>
-                        ) : (
-                            <form onSubmit={handleSubmit} className="space-y-4">
-                                {mode === 'register' && (
-                                    <div>
-                                        <label className="block text-[11px] font-mono uppercase tracking-wider text-[#a1a1a1] mb-1.5">
-                                            Display Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={displayName}
-                                            onChange={(e) => setDisplayName(e.target.value)}
-                                            placeholder="Sarah Connor"
-                                            required
-                                            className="w-full px-3.5 py-2.5 rounded-xl border border-[#2e2e2e] bg-[#141414] text-white text-xs outline-none focus:border-[#52a8ff] transition-all"
-                                        />
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-[11px] font-mono uppercase tracking-wider text-[#a1a1a1] mb-1.5">
-                                        Email
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="developer@company.com"
-                                        required
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#2e2e2e] bg-[#141414] text-white text-xs outline-none focus:border-[#52a8ff] transition-all"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-[11px] font-mono uppercase tracking-wider text-[#a1a1a1] mb-1.5">
-                                        Password
-                                    </label>
-                                    <input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="Minimum 8 characters"
-                                        required
-                                        minLength={8}
-                                        className="w-full px-3.5 py-2.5 rounded-xl border border-[#2e2e2e] bg-[#141414] text-white text-xs outline-none focus:border-[#52a8ff] transition-all"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full py-2.5 rounded-xl bg-white text-black text-xs font-semibold hover:bg-[#e8e8e8] transition-all disabled:opacity-50"
-                                >
-                                    {loading ? 'Processing…' : mode === 'login' ? 'Sign In' : 'Create Account'}
-                                </button>
-
-                                {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-                                    <>
-                                    <div className="flex items-center my-4">
-                                        <div className="flex-1 h-px bg-[#1f1f1f]" />
-                                        <span className="px-3 text-[10px] font-mono text-[#565656] uppercase">OR</span>
-                                        <div className="flex-1 h-px bg-[#1f1f1f]" />
-                                    </div>
-
-                                    <div className="flex justify-center">
-                                        <GoogleLogin
-                                            onSuccess={handleGoogleSuccess}
-                                            onError={handleGoogleError}
-                                            theme="filled_black"
-                                            shape="pill"
-                                            text={mode === 'login' ? 'signin_with' : 'signup_with'}
-                                        />
-                                    </div>
-                                    </>
-                                )}
-                            </form>
-                        )}
-                    </div>
-                </div>
-            )}
+            <AuthDialog
+                open={authOpen}
+                mode={authMode}
+                onModeChange={setAuthMode}
+                onClose={() => setAuthOpen(false)}
+                onSignedIn={goToWorkspace}
+                onJoined={(id) => router.push(`/workspace/${id}`)}
+                initialError={authError}
+            />
         </div>
     );
 }
