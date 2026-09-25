@@ -1,116 +1,159 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef } from 'react';
 import MessageBubble from './MessageBubble';
-import { Channel, Message, User, TypingUser } from '@/types';
+import { Avatar } from './ui/Brand';
+import { HashIcon, MenuIcon } from './ui/icons';
+import type { Channel, Message, OnlineUser, TypingUser } from '@/types';
 
 export interface ChatAreaProps {
     messages: Message[];
     channel: Channel | null;
-    currentUser: User | null;
     typingUsers?: TypingUser[];
+    onlineUsers?: OnlineUser[];
     onRetry?: (message: Message) => void;
     onMissingKey?: () => void;
+    onOpenSidebar?: () => void;
     loading?: boolean;
     isDemo?: boolean;
+    /** Landing-page preview: no API calls from code blocks. */
+    preview?: boolean;
+}
+
+const GROUP_WINDOW_MS = 5 * 60 * 1000;
+const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+
+function dayLabel(d: Date): string {
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    if (d.toDateString() === today.toDateString()) return 'Today';
+    if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return dayFmt.format(d);
 }
 
 export default function ChatArea({
     messages,
     channel,
-    currentUser,
-    typingUsers,
+    typingUsers = [],
+    onlineUsers = [],
     onRetry,
     onMissingKey,
+    onOpenSidebar,
     loading,
     isDemo,
+    preview,
 }: ChatAreaProps) {
-    const bottomRef = useRef<HTMLDivElement | null>(null);
-    const containerRef = useRef<HTMLDivElement | null>(null);
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    const stickToBottom = useRef(true);
 
-    useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    // Follow new messages only if the reader is already near the bottom.
+    const onScroll = () => {
+        const el = scrollRef.current;
+        if (el) stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    };
+    useLayoutEffect(() => {
+        const el = scrollRef.current;
+        if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
+    }, [messages, typingUsers.length]);
+    useEffect(() => { stickToBottom.current = true; }, [channel?.id]);
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-black font-sans">
-            {/* Top Channel Header */}
-            <div className="px-6 py-3.5 border-b border-[#1f1f1f] bg-[#0a0a0c] flex items-center justify-between z-10">
-                <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-[#52a8ff] font-mono text-base font-bold">#</span>
-                    <h3 className="text-xs font-semibold text-white truncate tracking-tight">
-                        {channel?.name || 'general'}
-                    </h3>
+        <div className="flex min-h-0 flex-1 flex-col">
+            <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-line px-4 md:px-5">
+                <div className="flex min-w-0 items-center gap-2">
+                    {onOpenSidebar && (
+                        <button type="button" onClick={onOpenSidebar} className="icon-btn -ml-1 md:hidden" aria-label="Open sidebar">
+                            <MenuIcon size={18} />
+                        </button>
+                    )}
+                    <HashIcon size={17} className="shrink-0 text-fg-subtle" />
+                    <h1 className="truncate text-[15px] font-semibold">{channel?.name ?? '…'}</h1>
                     {channel?.topic && (
-                        <>
-                            <div className="w-px h-3 bg-[#2e2e2e] mx-1" />
-                            <span className="text-xs text-[#71717a] truncate">{channel.topic}</span>
-                        </>
+                        <p className="hidden truncate border-l border-line pl-3 text-[13px] text-fg-subtle sm:block">{channel.topic}</p>
                     )}
                 </div>
-
-                <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                    <span className="text-[11px] font-mono text-[#71717a]">
-                        {isDemo ? 'Sandbox Demo' : 'Live Channel'}
-                    </span>
+                <div className="flex shrink-0 items-center gap-3">
+                    {isDemo && (
+                        <span className="rounded-md border border-accent/30 bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">
+                            Demo
+                        </span>
+                    )}
+                    {onlineUsers.length > 0 && (
+                        <div className="flex items-center gap-2" title={onlineUsers.map((u) => u.displayName).join(', ')}>
+                            <div className="flex -space-x-1.5">
+                                {onlineUsers.slice(0, 4).map((u) => (
+                                    <span key={u.id} className="rounded-[8px] ring-2 ring-bg">
+                                        <Avatar name={u.displayName} seed={u.id} src={u.avatar} size={24} />
+                                    </span>
+                                ))}
+                            </div>
+                            <span className="hidden text-xs text-fg-subtle sm:inline">{onlineUsers.length} online</span>
+                        </div>
+                    )}
                 </div>
-            </div>
+            </header>
 
-            {/* Message Feed */}
-            <div ref={containerRef} className="flex-1 overflow-y-auto py-4">
+            <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto pb-3">
                 {loading ? (
-                    <div className="px-6 flex flex-col gap-4">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="flex gap-3 animate-pulse">
-                                <div className="skeleton w-8 h-8 rounded-lg shrink-0" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="skeleton h-3 w-[80px]" />
-                                    <div className="skeleton h-4 w-[60%]" />
+                    <div className="space-y-5 px-5 pt-6">
+                        {[70, 45, 85, 55].map((w, i) => (
+                            <div key={i} className="flex gap-3">
+                                <div className="skeleton h-9 w-9 shrink-0" />
+                                <div className="flex-1 space-y-2 pt-1">
+                                    <div className="skeleton h-3 w-28" />
+                                    <div className="skeleton h-3.5" style={{ width: `${w}%` }} />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center px-4 max-w-sm mx-auto animate-fade-in">
-                        <div className="w-12 h-12 rounded-xl bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-xl mb-3 text-[#52a8ff]">
-                            #
+                    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-surface text-fg-subtle">
+                            <HashIcon size={22} />
                         </div>
-                        <h4 className="text-xs font-semibold text-white mb-1">
-                            Start of #{channel?.name || 'general'}
-                        </h4>
-                        <p className="text-xs text-[#71717a] leading-relaxed">
-                            Send a message or click Code Mode below to share a syntax-highlighted code snippet with in-line AI.
+                        <h2 className="text-base font-semibold">Welcome to #{channel?.name}</h2>
+                        <p className="mt-1 max-w-sm text-sm text-fg-subtle">
+                            This is the start of the channel. Say hello, or share a snippet with the code button below.
                         </p>
                     </div>
                 ) : (
-                    messages.map((msg) => (
-                        <MessageBubble
-                            key={msg.id}
-                            message={msg}
-                            isOwn={msg.user?.id === currentUser?.id}
-                            onRetry={onRetry}
-                            onMissingKey={onMissingKey}
-                        />
-                    ))
+                    messages.map((msg, i) => {
+                        const prev = messages[i - 1];
+                        const date = new Date(msg.createdAt);
+                        const newDay = !prev || new Date(prev.createdAt).toDateString() !== date.toDateString();
+                        const grouped =
+                            !newDay &&
+                            !!prev &&
+                            prev.user?.id === msg.user?.id &&
+                            date.getTime() - new Date(prev.createdAt).getTime() < GROUP_WINDOW_MS;
+                        return (
+                            <Fragment key={msg.id}>
+                                {newDay && (
+                                    <div className="relative mb-1 mt-5 flex items-center px-5" role="separator">
+                                        <div className="h-px flex-1 bg-line" />
+                                        <span className="px-3 text-[11px] font-medium text-fg-subtle">{dayLabel(date)}</span>
+                                        <div className="h-px flex-1 bg-line" />
+                                    </div>
+                                )}
+                                <MessageBubble message={msg} grouped={grouped} onRetry={onRetry} onMissingKey={onMissingKey} preview={preview} />
+                            </Fragment>
+                        );
+                    })
                 )}
-                <div ref={bottomRef} />
             </div>
 
-            {/* Typing Indicators */}
-            {typingUsers && typingUsers.length > 0 && (
-                <div className="animate-fade-in px-6 py-1.5 text-[11px] text-[#71717a] flex items-center gap-2 border-t border-[#1f1f1f] bg-[#0a0a0c]">
-                    <span className="inline-flex gap-1 items-center">
-                        <span className="typing-dot" />
-                        <span className="typing-dot" />
-                        <span className="typing-dot" />
-                    </span>
-                    <span>
-                        <span className="text-[#a1a1a1]">{typingUsers.map((u) => u.displayName || u.userId).join(', ')}</span>{' '}
-                        {typingUsers.length === 1 ? 'is' : 'are'} typing…
-                    </span>
-                </div>
-            )}
+            <div className="flex h-6 shrink-0 items-center gap-2 px-5 text-xs text-fg-subtle" aria-live="polite">
+                {typingUsers.length > 0 && (
+                    <>
+                        <span className="flex gap-1"><span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" /></span>
+                        <span>
+                            <span className="font-medium text-fg-muted">{typingUsers.map((u) => u.displayName || 'Someone').join(', ')}</span>
+                            {typingUsers.length === 1 ? ' is typing…' : ' are typing…'}
+                        </span>
+                    </>
+                )}
+            </div>
         </div>
     );
 }
