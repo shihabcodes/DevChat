@@ -18,6 +18,13 @@ export interface ChatAreaProps {
     isDemo?: boolean;
     /** Landing-page preview: no API calls from code blocks. */
     preview?: boolean;
+    currentUserId?: string;
+    onEdit?: (message: Message, content: string) => Promise<void>;
+    onDelete?: (message: Message) => Promise<void>;
+    /** Older history exists; scrolling to the top calls onLoadOlder. */
+    hasMore?: boolean;
+    loadingOlder?: boolean;
+    onLoadOlder?: () => void;
 }
 
 const GROUP_WINDOW_MS = 5 * 60 * 1000;
@@ -43,9 +50,18 @@ export default function ChatArea({
     loading,
     isDemo,
     preview,
+    currentUserId,
+    onEdit,
+    onDelete,
+    hasMore,
+    loadingOlder,
+    onLoadOlder,
 }: ChatAreaProps) {
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    const topSentinel = useRef<HTMLDivElement | null>(null);
     const stickToBottom = useRef(true);
+    const prevFirstId = useRef<string | undefined>(undefined);
+    const prevHeight = useRef(0);
 
     // Follow new messages only if the reader is already near the bottom.
     const onScroll = () => {
@@ -54,8 +70,30 @@ export default function ChatArea({
     };
     useLayoutEffect(() => {
         const el = scrollRef.current;
-        if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
+        if (!el) return;
+        const firstId = messages[0]?.id;
+        if (prevFirstId.current && firstId !== prevFirstId.current && !stickToBottom.current) {
+            // Older messages were prepended: keep the reader's place instead of jumping.
+            el.scrollTop += el.scrollHeight - prevHeight.current;
+        } else if (stickToBottom.current) {
+            el.scrollTop = el.scrollHeight;
+        }
+        prevFirstId.current = firstId;
+        prevHeight.current = el.scrollHeight;
     }, [messages, typingUsers.length]);
+
+    // Load older history when the top of the list scrolls into view.
+    useEffect(() => {
+        const root = scrollRef.current;
+        const target = topSentinel.current;
+        if (!root || !target || !hasMore || !onLoadOlder) return;
+        const io = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting && !loadingOlder) onLoadOlder(); },
+            { root, rootMargin: '200px 0px 0px 0px' },
+        );
+        io.observe(target);
+        return () => io.disconnect();
+    }, [hasMore, loadingOlder, onLoadOlder, messages.length]);
     useEffect(() => { stickToBottom.current = true; }, [channel?.id]);
 
     return (
@@ -95,6 +133,17 @@ export default function ChatArea({
             </header>
 
             <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto pb-3">
+                <div ref={topSentinel} aria-hidden className="h-px" />
+                {!loading && hasMore && (
+                    <div className="flex justify-center py-3 text-xs text-fg-subtle">
+                        {loadingOlder ? 'Loading earlier messages…' : (
+                            <button type="button" onClick={onLoadOlder} className="btn btn-sm btn-ghost">Load earlier messages</button>
+                        )}
+                    </div>
+                )}
+                {!loading && !hasMore && messages.length > 0 && !preview && (
+                    <p className="pb-1 pt-5 text-center text-xs text-fg-subtle">This is the beginning of #{channel?.name}.</p>
+                )}
                 {loading ? (
                     <div className="space-y-5 px-5 pt-6">
                         {[70, 45, 85, 55].map((w, i) => (
@@ -136,7 +185,16 @@ export default function ChatArea({
                                         <div className="h-px flex-1 bg-line" />
                                     </div>
                                 )}
-                                <MessageBubble message={msg} grouped={grouped} onRetry={onRetry} onMissingKey={onMissingKey} preview={preview} />
+                                <MessageBubble
+                                    message={msg}
+                                    grouped={grouped}
+                                    onRetry={onRetry}
+                                    onMissingKey={onMissingKey}
+                                    preview={preview}
+                                    isOwn={!!currentUserId && msg.user?.id === currentUserId}
+                                    onEdit={onEdit}
+                                    onDelete={onDelete}
+                                />
                             </Fragment>
                         );
                     })

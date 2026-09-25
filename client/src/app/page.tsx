@@ -51,7 +51,7 @@ const FEATURES = [
 
 const UNDER_THE_HOOD = [
     { icon: LockIcon, text: 'Row-level security on every table, keyed on workspace membership' },
-    { icon: DatabaseIcon, text: 'A SQL test suite runs 35 allow/deny checks against the real database' },
+    { icon: DatabaseIcon, text: 'A SQL test suite runs 37 allow/deny checks against the real database' },
     { icon: ZapIcon, text: 'Rate limits enforced by Postgres triggers, not middleware' },
     { icon: KeyIcon, text: 'Bring-your-own AI keys, encrypted server-side with AES-256-GCM' },
 ];
@@ -304,7 +304,7 @@ export default function Home() {
                         <div className="min-w-0">
                             <StaticCode code={POLICY_SQL} language="sql" />
                             <dl className="mt-4 grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-line bg-line text-center">
-                                {[['35', 'policy tests'], ['0', 'servers to run'], ['$0', 'hosting / month']].map(([n, label]) => (
+                                {[['37', 'policy tests'], ['0', 'servers to run'], ['$0', 'hosting / month']].map(([n, label]) => (
                                     <div key={label} className="bg-surface px-3 py-4">
                                         <dt className="sr-only">{label}</dt>
                                         <dd className="text-xl font-semibold tracking-tight">{n}</dd>

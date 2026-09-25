@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Avatar, LogoMark } from './ui/Brand';
-import { CheckIcon, CopyIcon, HashIcon, KeyIcon, LinkIcon, LogOutIcon, PlusIcon, XIcon } from './ui/icons';
+import { CheckIcon, CopyIcon, HashIcon, KeyIcon, LinkIcon, LogOutIcon, PlusIcon, SearchIcon, XIcon } from './ui/icons';
 import type { Workspace, Channel, OnlineUser, User } from '@/types';
 
 export interface SidebarProps {
@@ -20,6 +20,7 @@ export interface SidebarProps {
     hasOpenaiKey?: boolean;
     isDemo?: boolean;
     onClose?: () => void;
+    onOpenSwitcher?: () => void;
 }
 
 export default function Sidebar({
@@ -35,6 +36,7 @@ export default function Sidebar({
     hasOpenaiKey,
     isDemo,
     onClose,
+    onOpenSwitcher,
 }: SidebarProps) {
     const [creating, setCreating] = useState(false);
     const [newChannel, setNewChannel] = useState('');
@@ -125,6 +127,17 @@ export default function Sidebar({
             </div>
 
             <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+                {onOpenSwitcher && (
+                    <button
+                        type="button"
+                        onClick={onOpenSwitcher}
+                        className="mb-4 flex h-8 w-full items-center gap-2 rounded-md border border-line bg-bg px-2 text-sm text-fg-subtle transition-colors hover:border-line-strong hover:text-fg-muted"
+                    >
+                        <SearchIcon size={14} />
+                        <span className="flex-1 text-left">Jump to…</span>
+                        <span className="kbd">⌘K</span>
+                    </button>
+                )}
                 <div className="mb-1 flex items-center justify-between px-2">
                     <span className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">Channels</span>
                     <button
