@@ -97,9 +97,26 @@ export async function signIn(email: string, password: string) {
     fail(error);
 }
 
-export async function signInWithGoogleIdToken(idToken: string) {
-    const { error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+/** Redirects to Google; Supabase sends the user back to the landing page signed in. */
+export async function signInWithGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/` },
+    });
     fail(error);
+}
+
+/** Which OAuth providers are enabled on the Supabase project (public endpoint). */
+export async function getEnabledProviders(): Promise<{ google: boolean }> {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+    try {
+        const res = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } });
+        const body = await res.json();
+        return { google: Boolean(body?.external?.google) };
+    } catch {
+        return { google: false };
+    }
 }
 
 export async function signOut() {
