@@ -24,11 +24,13 @@ Developers paste code into Slack, then copy it into ChatGPT to ask what it does.
 
 ## Features
 
-- **Real-time channels**: live messages, typing indicators, and who's online, with optimistic sends, retry, and backfill after reconnects
+- **Real-time channels**: live messages, edits and deletes, typing indicators, and who's online, with optimistic sends, retry, and backfill after reconnects
+- **Full history**: scroll up to page back through older messages; the view keeps your place
+- **Keyboard-first**: ⌘K to jump between channels, ↵ to send, ⌘↵ for code
 - **Code as a first-class message**: a Monaco editor for writing snippets, and Shiki highlighting across 20 languages
 - **Streamed AI explanations**: bring your own OpenAI key; answers stream in over SSE and are cached per message
 - **Workspaces & channels**, joined with an invite code that owners can rotate
-- **One-click guest demo** built on anonymous auth, cleaned up automatically by a database cron job
+- **Sign in with Google** or email, or try a **one-click guest demo** built on anonymous auth and cleaned up automatically by a database cron job
 
 ## Architecture
 
@@ -48,7 +50,7 @@ There's no custom backend server. The browser talks to Supabase directly, and **
 
 **Authorization lives in the database.** Every table has RLS policies built on one rule: you can see a workspace's channels, messages, members and AI answers only if you're a member. Helper functions live in a non-exposed `private` schema, and multi-row writes (create workspace, join by invite) are `SECURITY DEFINER` RPCs. Column-level grants stop users from editing anything but the fields they should, such as a message's content but not its author or channel.
 
-**Policies are tested, not assumed.** [`supabase/tests/rls_test.sql`](./supabase/tests/rls_test.sql) creates throwaway users (an owner, a member, and an outsider), attempts 35 allowed and forbidden actions against the real project, and cleans up after itself. For example: outsiders reading messages, members promoting themselves, planting fake AI answers, and reading stored API keys.
+**Policies are tested, not assumed.** [`supabase/tests/rls_test.sql`](./supabase/tests/rls_test.sql) creates throwaway users (an owner, a member, and an outsider), attempts 37 allowed and forbidden actions against the real project, and cleans up after itself. For example: outsiders reading messages, members promoting themselves, planting fake AI answers, and reading stored API keys.
 
 **Realtime without a socket server.** Messages come from Postgres change feeds, and typing and presence use Realtime broadcast and presence. All topics are private, and access is gated by the same membership check as the tables. When a subscription drops and recovers, the client backfills the channel so nothing sent during the gap is lost.
 
@@ -65,7 +67,7 @@ There's no custom backend server. The browser talks to Supabase directly, and **
 | | |
 |---|---|
 | **App** | Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 4 |
-| **Data & auth** | Supabase: Postgres, Auth (email, anonymous), Realtime, pg_cron |
+| **Data & auth** | Supabase: Postgres, Auth (Google, email, anonymous), Realtime, pg_cron |
 | **AI** | OpenAI via Next.js route handlers, streamed with Server-Sent Events |
 | **Code** | Shiki for highlighting, Monaco for editing |
 | **Hosting** | Vercel + Supabase, both on free tiers |
@@ -112,9 +114,9 @@ supabase/
 
 ## Roadmap
 
-- [ ] Threads, reactions, and message editing in the UI (the database already supports edits)
-- [ ] Load older messages and full-text search
-- [ ] Google sign-in
+- [ ] Threads and reactions
+- [ ] Full-text search
+- [ ] Let guests keep their demo workspace by signing up
 - [ ] End-to-end tests with Playwright
 
 ## Author
