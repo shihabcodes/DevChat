@@ -40,30 +40,17 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     render() {
         if (this.state.hasError) {
             return (
-                <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-[#0F0F23] text-[#F9FAFB]">
-                    <div className="text-5xl mb-4">⚠️</div>
-                    <h2 className="text-xl font-semibold mb-2 text-[#F87171]">Something went wrong</h2>
-                    <p className="text-sm text-[#9CA3AF] mb-1 max-w-md">
-                        The chat hit an unexpected error. We logged the details to the console.
+                <div className="flex h-dvh flex-col items-center justify-center bg-bg p-8 text-center text-fg">
+                    <h2 className="text-lg font-semibold">Something went wrong</h2>
+                    <p className="mt-2 max-w-md text-sm text-fg-muted">
+                        The chat hit an unexpected error. Details are in the browser console.
                     </p>
                     {this.state.error?.message && (
-                        <p className="text-[0.75rem] text-[#6B7280] font-mono mb-6 max-w-lg break-words">
-                            {this.state.error.message}
-                        </p>
+                        <p className="mt-3 max-w-lg break-words font-mono text-xs text-fg-subtle">{this.state.error.message}</p>
                     )}
-                    <div className="flex gap-3">
-                        <button
-                            onClick={this.handleReset}
-                            className="px-4 py-2 rounded-lg bg-[#4F46E5] hover:bg-[#4338CA] text-white text-sm font-semibold transition-colors cursor-pointer"
-                        >
-                            Try again
-                        </button>
-                        <button
-                            onClick={this.handleReload}
-                            className="px-4 py-2 rounded-lg border border-[#2D2D5E] hover:border-[#4F46E5] text-[#D1D5DB] text-sm font-semibold transition-colors cursor-pointer"
-                        >
-                            Reload page
-                        </button>
+                    <div className="mt-6 flex gap-2">
+                        <button type="button" onClick={this.handleReset} className="btn btn-primary">Try again</button>
+                        <button type="button" onClick={this.handleReload} className="btn btn-secondary">Reload page</button>
                     </div>
                 </div>
             );

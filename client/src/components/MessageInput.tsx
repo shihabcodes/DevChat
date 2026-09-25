@@ -2,11 +2,15 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
+import { CodeIcon, SendIcon } from './ui/icons';
 
-const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
+const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
+    ssr: false,
+    loading: () => <div className="flex h-full items-center justify-center text-xs text-fg-subtle">Loading editor…</div>,
+});
 
 const LANGUAGES = [
-    'javascript', 'typescript', 'python', 'rust', 'go', 'sql', 'bash',
+    'typescript', 'javascript', 'python', 'rust', 'go', 'sql', 'bash',
     'json', 'html', 'css', 'yaml', 'c', 'cpp', 'java', 'markdown',
 ];
 
@@ -15,57 +19,58 @@ export interface MessageInputProps {
     onTyping?: () => void;
     onStopTyping?: () => void;
     disabled?: boolean;
+    placeholder?: string;
+    /** Focus the text box on mount (off for the landing-page preview, so the page doesn't jump). */
+    autoFocus?: boolean;
 }
 
-export default function MessageInput({
-    onSend,
-    onTyping,
-    onStopTyping,
-    disabled = false,
-}: MessageInputProps) {
-    const [content, setContent] = useState<string>('');
-    const [codeMode, setCodeMode] = useState<boolean>(false);
-    const [language, setLanguage] = useState<string>('typescript');
-    const [codeContent, setCodeContent] = useState<string>('');
+export default function MessageInput({ onSend, onTyping, onStopTyping, disabled = false, placeholder, autoFocus = true }: MessageInputProps) {
+    const [content, setContent] = useState('');
+    const [codeMode, setCodeMode] = useState(false);
+    const [language, setLanguage] = useState('typescript');
+    const [codeContent, setCodeContent] = useState('');
     const inputRef = useRef<HTMLTextAreaElement | null>(null);
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Focus on mount (if asked) and when leaving code mode, never just because an effect re-ran.
+    const prevCodeMode = useRef(codeMode);
     useEffect(() => {
-        if (!codeMode && inputRef.current) {
-            inputRef.current.focus();
-        }
-    }, [codeMode]);
+        const leftCodeMode = prevCodeMode.current && !codeMode;
+        prevCodeMode.current = codeMode;
+        if (!codeMode && (leftCodeMode || autoFocus)) inputRef.current?.focus();
+    }, [codeMode, autoFocus]);
 
     const handleTyping = () => {
         onTyping?.();
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        typingTimeoutRef.current = setTimeout(() => {
-            onStopTyping?.();
-        }, 2000);
+        typingTimeoutRef.current = setTimeout(() => onStopTyping?.(), 2000);
     };
 
     const handleSend = useCallback(() => {
+        if (disabled) return;
         if (codeMode) {
             const trimmed = codeContent.trim();
-            if (trimmed) {
-                onSend(trimmed, 'code', language);
-                setCodeContent('');
-                setCodeMode(false);
-            }
+            if (!trimmed) return;
+            onSend(trimmed, 'code', language);
+            setCodeContent('');
+            setCodeMode(false);
         } else {
             const trimmed = content.trim();
-            if (trimmed) {
-                onSend(trimmed, 'text');
-                setContent('');
-                if (inputRef.current) inputRef.current.style.height = 'auto';
-            }
+            if (!trimmed) return;
+            onSend(trimmed, 'text');
+            setContent('');
+            if (inputRef.current) inputRef.current.style.height = 'auto';
         }
         onStopTyping?.();
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    }, [codeMode, codeContent, content, language, onSend, onStopTyping]);
+    }, [disabled, codeMode, codeContent, content, language, onSend, onStopTyping]);
+
+    // Monaco captures its keybinding once, so route it through a ref to the latest handler.
+    const sendRef = useRef(handleSend);
+    sendRef.current = handleSend;
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey && !codeMode) {
+        if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             handleSend();
         }
@@ -75,91 +80,116 @@ export default function MessageInput({
         setContent(e.target.value);
         handleTyping();
         e.target.style.height = 'auto';
-        e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+        e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
     };
 
+    const canSend = !disabled && (codeMode ? codeContent.trim() : content.trim());
+
     return (
-        <div className="border-t border-[#1f1f1f] p-3.5 bg-[#080809] flex flex-col gap-2.5 z-10 font-sans">
-            <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setCodeMode(!codeMode)}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
-                            codeMode
-                                ? 'border-[#52a8ff]/40 bg-[#52a8ff]/15 text-[#52a8ff]'
-                                : 'border-[#2e2e2e] bg-[#141414] text-[#a1a1a1] hover:text-white hover:border-[#3a3a3a]'
-                        }`}
-                    >
-                        <span>&lt;/&gt;</span>
-                        <span>{codeMode ? 'Code Mode Active' : 'Share Code'}</span>
-                    </button>
-
-                    {codeMode && (
-                        <select
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                            className="px-2 py-1 rounded-md border border-[#2e2e2e] bg-[#141414] text-[#52a8ff] text-xs font-mono outline-none cursor-pointer focus:border-[#52a8ff]"
-                        >
-                            {LANGUAGES.map((lang) => (
-                                <option key={lang} value={lang}>{lang}</option>
-                            ))}
-                        </select>
-                    )}
-                </div>
-
-                <button
-                    onClick={handleSend}
-                    disabled={disabled || (codeMode ? !codeContent.trim() : !content.trim())}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-white text-black hover:bg-[#e8e8e8] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                    <span>Send</span>
-                    <span className="text-[10px] text-[#71717a] font-mono">{codeMode ? '⌘↵' : '↵'}</span>
-                </button>
-            </div>
-
-            {codeMode ? (
-                <div className="rounded-xl overflow-hidden border border-[#1f1f1f] bg-[#0c0c0e] h-[190px]">
-                    <MonacoEditor
-                        height="190px"
-                        language={language}
-                        value={codeContent}
-                        onChange={(val) => {
-                            setCodeContent(val || '');
-                            handleTyping();
-                        }}
-                        onMount={(editor, monaco) => {
-                            editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-                                handleSend();
-                            });
-                        }}
-                        theme="vs-dark"
-                        options={{
-                            minimap: { enabled: false },
-                            scrollBeyondLastLine: false,
-                            fontSize: 12,
-                            fontFamily: 'Geist Mono, JetBrains Mono, monospace',
-                            lineNumbers: 'on',
-                            roundedSelection: true,
-                            automaticLayout: true,
-                            padding: { top: 8 },
-                            overviewRulerBorder: false,
-                            hideCursorInOverviewRuler: true,
-                            renderLineHighlight: 'gutter',
-                        }}
+        <div className="shrink-0 px-4 pb-4 md:px-5">
+            <div className="rounded-xl border border-line-strong bg-surface transition-colors focus-within:border-fg-subtle">
+                {codeMode ? (
+                    <div className="h-[200px] overflow-hidden rounded-t-xl pt-2">
+                        <MonacoEditor
+                            height="100%"
+                            language={language}
+                            value={codeContent}
+                            onChange={(val) => {
+                                setCodeContent(val || '');
+                                handleTyping();
+                            }}
+                            beforeMount={(monaco) => {
+                                monaco.editor.defineTheme('devchat', {
+                                    base: 'vs-dark',
+                                    inherit: true,
+                                    rules: [],
+                                    colors: {
+                                        'editor.background': '#141416',
+                                        'editor.lineHighlightBackground': '#1b1b1e',
+                                        'editorLineNumber.foreground': '#4a4a52',
+                                        'editorLineNumber.activeForeground': '#a0a0a8',
+                                        'editorCursor.foreground': '#ffb224',
+                                        'editor.selectionBackground': '#ffb22433',
+                                        'editorIndentGuide.background1': '#232327',
+                                    },
+                                });
+                            }}
+                            onMount={(editor, monaco) => {
+                                editor.focus(); // only mounts after the user switches to code mode
+                                editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => sendRef.current());
+                            }}
+                            theme="devchat"
+                            options={{
+                                minimap: { enabled: false },
+                                scrollBeyondLastLine: false,
+                                fontSize: 13,
+                                fontFamily: 'var(--font-geist-mono), ui-monospace, monospace',
+                                lineNumbers: 'on',
+                                lineNumbersMinChars: 3,
+                                automaticLayout: true,
+                                overviewRulerBorder: false,
+                                hideCursorInOverviewRuler: true,
+                                renderLineHighlight: 'line',
+                                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+                                padding: { top: 4, bottom: 8 },
+                            }}
+                        />
+                    </div>
+                ) : (
+                    <textarea
+                        ref={inputRef}
+                        value={content}
+                        onChange={handleTextChange}
+                        onKeyDown={handleKeyDown}
+                        disabled={disabled}
+                        placeholder={placeholder ?? 'Write a message'}
+                        rows={1}
+                        aria-label="Message"
+                        className="block max-h-[180px] min-h-[46px] w-full resize-none bg-transparent focus-visible:outline-none px-3.5 pb-1 pt-3 text-[14.5px] text-fg outline-none placeholder:text-fg-subtle disabled:opacity-50"
                     />
+                )}
+
+                <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-1">
+                    <div className="flex items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={() => setCodeMode((v) => !v)}
+                            aria-pressed={codeMode}
+                            className={`inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium transition-colors ${
+                                codeMode ? 'bg-accent-soft text-accent' : 'text-fg-subtle hover:bg-elevated hover:text-fg'
+                            }`}
+                        >
+                            <CodeIcon size={15} />
+                            {codeMode ? 'Code' : 'Share code'}
+                        </button>
+                        {codeMode && (
+                            <select
+                                value={language}
+                                onChange={(e) => setLanguage(e.target.value)}
+                                aria-label="Language"
+                                className="h-7 cursor-pointer rounded-md border border-line bg-bg px-1.5 font-mono text-xs text-fg-muted outline-none hover:text-fg"
+                            >
+                                {LANGUAGES.map((lang) => <option key={lang} value={lang}>{lang}</option>)}
+                            </select>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <span className="hidden text-[11px] text-fg-subtle sm:inline">
+                            {codeMode ? <><span className="kbd">⌘</span> <span className="kbd">↵</span> to send</> : <><span className="kbd">↵</span> send · <span className="kbd">⇧</span> <span className="kbd">↵</span> new line</>}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={handleSend}
+                            disabled={!canSend}
+                            aria-label="Send message"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-fg text-bg transition-opacity disabled:opacity-25"
+                        >
+                            <SendIcon size={15} />
+                        </button>
+                    </div>
                 </div>
-            ) : (
-                <textarea
-                    ref={inputRef}
-                    value={content}
-                    onChange={handleTextChange}
-                    onKeyDown={handleKeyDown}
-                    disabled={disabled}
-                    placeholder={disabled ? 'Reconnecting to network...' : 'Message channel... (Enter to send, Shift+Enter for new line)'}
-                    rows={1}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-[#1f1f1f] bg-[#0e0e10] text-[#ededed] text-xs outline-none resize-none min-h-[38px] max-h-[140px] focus:border-[#52a8ff] transition-colors placeholder:text-[#565656]"
-                />
-            )}
+            </div>
         </div>
     );
 }

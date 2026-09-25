@@ -1,20 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { Workspace, Channel, OnlineUser, User } from '@/types';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { Avatar, LogoMark } from './ui/Brand';
+import { CheckIcon, CopyIcon, HashIcon, KeyIcon, LinkIcon, LogOutIcon, PlusIcon, XIcon } from './ui/icons';
+import type { Workspace, Channel, OnlineUser, User } from '@/types';
 
 export interface SidebarProps {
     workspace: Workspace | null;
     channels: Channel[];
     activeChannel: Channel | null;
     onSelectChannel: (channel: Channel) => void;
-    onCreateChannel: (name: string) => void;
+    /** Rejects with a user-facing message if the channel can't be created. */
+    onCreateChannel: (name: string) => Promise<void>;
     onlineUsers: OnlineUser[];
     currentUser: User | null;
     onLogout: () => void;
     onOpenAISettings: () => void;
     hasOpenaiKey?: boolean;
     isDemo?: boolean;
+    onClose?: () => void;
 }
 
 export default function Sidebar({
@@ -29,178 +34,190 @@ export default function Sidebar({
     onOpenAISettings,
     hasOpenaiKey,
     isDemo,
+    onClose,
 }: SidebarProps) {
-    const [showNewChannel, setShowNewChannel] = useState<boolean>(false);
-    const [newChannelName, setNewChannelName] = useState<string>('');
-    const [showInvite, setShowInvite] = useState<boolean>(false);
-    const [copiedInvite, setCopiedInvite] = useState<boolean>(false);
+    const [creating, setCreating] = useState(false);
+    const [newChannel, setNewChannel] = useState('');
+    const [createError, setCreateError] = useState<string | null>(null);
+    const [showInvite, setShowInvite] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const inviteRef = useRef<HTMLDivElement | null>(null);
 
-    const handleCopyInvite = () => {
-        if (workspace?.inviteCode) {
-            navigator.clipboard.writeText(workspace.inviteCode);
-            setCopiedInvite(true);
-            setTimeout(() => setCopiedInvite(false), 2000);
-        }
+    // Close the invite popover on outside click or Escape.
+    useEffect(() => {
+        if (!showInvite) return;
+        const onDown = (e: MouseEvent) => {
+            if (!inviteRef.current?.contains(e.target as Node)) setShowInvite(false);
+        };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowInvite(false); };
+        document.addEventListener('mousedown', onDown);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('mousedown', onDown);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [showInvite]);
+
+    const copyInvite = async () => {
+        if (!workspace?.inviteCode) return;
+        try {
+            await navigator.clipboard.writeText(workspace.inviteCode);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        } catch {/* clipboard blocked */}
     };
 
-    const handleCreateChannel = (e: React.FormEvent<HTMLFormElement>) => {
+    const submitChannel = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (newChannelName.trim()) {
-            onCreateChannel(newChannelName.trim());
-            setNewChannelName('');
-            setShowNewChannel(false);
+        if (!newChannel.trim()) return;
+        setCreateError(null);
+        try {
+            await onCreateChannel(newChannel.trim());
+            setNewChannel('');
+            setCreating(false);
+        } catch (err) {
+            setCreateError(err instanceof Error ? err.message : 'Could not create channel');
         }
     };
 
     return (
-        <div className="w-[260px] min-w-[260px] h-screen bg-[#080809] border-r border-[#1f1f1f] flex flex-col justify-between select-none z-30 font-sans">
-            <div>
-                <div className="px-4 py-3.5 border-b border-[#1f1f1f] bg-[#0a0a0c]">
-                    <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-6 h-6 rounded-md bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[11px] font-bold text-[#52a8ff] shrink-0">
-                                D
-                            </span>
-                            <h2 className="text-xs font-semibold text-white truncate tracking-tight">
-                                {workspace?.name || 'DevChat Workspace'}
-                            </h2>
-                        </div>
+        <aside className="flex h-full w-[260px] flex-col border-r border-line bg-panel">
+            {/* Workspace header */}
+            <div ref={inviteRef} className="relative flex h-14 shrink-0 items-center justify-between gap-2 border-b border-line px-3">
+                <Link href="/" className="flex min-w-0 items-center gap-2.5 rounded-md px-1.5 py-1 hover:bg-elevated" title="DevChat home">
+                    <LogoMark size={22} />
+                    <span className="truncate text-sm font-semibold">{workspace?.name ?? 'Workspace'}</span>
+                </Link>
+                <div className="flex items-center">
+                    {workspace?.inviteCode && (
                         <button
-                            onClick={() => setShowInvite((s) => !s)}
-                            className="text-[#71717a] hover:text-white p-1 rounded hover:bg-[#141414] transition-colors"
-                            title="Workspace Invite Code"
-                            aria-label="Show invite code"
+                            type="button"
+                            onClick={() => setShowInvite((v) => !v)}
+                            className="icon-btn"
+                            aria-label="Invite people"
+                            aria-expanded={showInvite}
+                            title="Invite people"
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
-                            </svg>
+                            <LinkIcon size={15} />
                         </button>
-                    </div>
-
-                    {showInvite && workspace?.inviteCode && (
-                        <div className="animate-fade-in mt-2.5 p-2.5 bg-[#0e0e10] border border-[#1f1f1f] rounded-lg text-xs">
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-mono uppercase text-[#71717a]">Invite Code</span>
-                                <span className={`text-[9px] font-mono ${copiedInvite ? 'text-[#10b981]' : 'text-[#52a8ff]'}`}>
-                                    {copiedInvite ? 'Copied!' : 'Click to copy'}
-                                </span>
-                            </div>
-                            <code
-                                className="text-white font-mono text-xs cursor-pointer block py-1 px-2 bg-black rounded border border-[#2e2e2e] text-center hover:border-[#52a8ff] transition-colors"
-                                onClick={handleCopyInvite}
-                            >
-                                {workspace.inviteCode}
-                            </code>
-                        </div>
+                    )}
+                    {onClose && (
+                        <button type="button" onClick={onClose} className="icon-btn md:hidden" aria-label="Close sidebar">
+                            <XIcon size={16} />
+                        </button>
                     )}
                 </div>
 
-                <div className="p-3">
-                    <div className="flex items-center justify-between px-2 mb-2">
-                        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#565656]">
-                            Channels
-                        </span>
+                {showInvite && workspace?.inviteCode && (
+                    <div className="animate-fade-in absolute left-3 right-3 top-[52px] z-20 rounded-xl border border-line-strong bg-surface p-3 shadow-2xl shadow-black/60">
+                        <p className="text-[13px] font-medium">Invite people</p>
+                        <p className="mt-0.5 text-xs text-fg-subtle">Share this code. They join from the sign-in screen.</p>
                         <button
-                            onClick={() => setShowNewChannel((s) => !s)}
-                            className="text-[#71717a] hover:text-white p-0.5 rounded hover:bg-[#141414] transition-colors"
-                            aria-label="Create channel"
+                            type="button"
+                            onClick={copyInvite}
+                            className="mt-2.5 flex w-full items-center justify-between rounded-lg border border-line bg-bg px-3 py-2 font-mono text-[13px] hover:border-line-strong"
                         >
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                            </svg>
+                            <span>{workspace.inviteCode}</span>
+                            {copied ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} className="text-fg-subtle" />}
                         </button>
                     </div>
-
-                    {showNewChannel && (
-                        <form onSubmit={handleCreateChannel} className="animate-fade-in px-1 mb-2">
-                            <input
-                                type="text"
-                                value={newChannelName}
-                                onChange={(e) => setNewChannelName(e.target.value)}
-                                placeholder="new-channel"
-                                autoFocus
-                                className="w-full px-2.5 py-1.5 rounded-lg border border-[#2e2e2e] bg-[#0e0e10] text-white text-xs font-mono outline-none focus:border-[#52a8ff] transition-colors"
-                                onKeyDown={(e) => e.key === 'Escape' && setShowNewChannel(false)}
-                            />
-                        </form>
-                    )}
-
-                    <div className="space-y-0.5 max-h-[260px] overflow-y-auto">
-                        {channels.map((channel) => {
-                            const isActive = activeChannel?.id === channel.id;
-                            return (
-                                <button
-                                    key={channel.id}
-                                    onClick={() => onSelectChannel(channel)}
-                                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all text-left ${
-                                        isActive
-                                            ? 'bg-[#141414] text-white border border-[#2e2e2e]'
-                                            : 'text-[#71717a] hover:text-white hover:bg-[#0e0e10]'
-                                    }`}
-                                >
-                                    <span className={isActive ? 'text-[#52a8ff]' : 'text-[#565656]'}>#</span>
-                                    <span className="truncate">{channel.name}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="mt-6 px-2 mb-2">
-                        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#565656]">
-                            Online ({onlineUsers.length})
-                        </span>
-                    </div>
-                    <div className="space-y-1.5 px-2 max-h-[160px] overflow-y-auto">
-                        {onlineUsers.map((u) => (
-                            <div key={u.id} className="flex items-center gap-2 text-xs text-[#a1a1a1]">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] shadow-[0_0_6px_#10b981]"></span>
-                                <span className="truncate">{u.displayName}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                )}
             </div>
 
-            <div className="p-3 border-t border-[#1f1f1f] bg-[#0a0a0c] space-y-2">
-                <button
-                    onClick={onOpenAISettings}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-mono border transition-colors ${
-                        hasOpenaiKey
-                            ? 'border-[#10b981]/30 bg-[#10b981]/5 text-[#10b981] hover:bg-[#10b981]/10'
-                            : 'border-[#1f1f1f] bg-[#0e0e10] text-[#a1a1a1] hover:text-white hover:border-[#2e2e2e]'
-                    }`}
-                >
-                    <div className="flex items-center gap-2">
-                        <span className={`w-1.5 h-1.5 rounded-full ${hasOpenaiKey ? 'bg-[#10b981]' : 'bg-[#f59e0b]'}`} />
-                        <span>{hasOpenaiKey ? 'AI Key Active' : 'Configure AI Key'}</span>
-                    </div>
-                    <span className="text-[10px] text-[#71717a]">⚙</span>
-                </button>
+            <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3">
+                <div className="mb-1 flex items-center justify-between px-2">
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-fg-subtle">Channels</span>
+                    <button
+                        type="button"
+                        onClick={() => { setCreating((v) => !v); setCreateError(null); }}
+                        className="icon-btn h-6 w-6"
+                        aria-label="Create channel"
+                        title="Create channel"
+                    >
+                        <PlusIcon size={14} />
+                    </button>
+                </div>
 
-                {isDemo && (
-                    <p className="px-1 text-[10px] leading-snug text-[#71717a]">
-                        Guest demo: this workspace is deleted after 24 hours.
-                    </p>
+                {creating && (
+                    <form onSubmit={submitChannel} className="mb-1 px-1">
+                        <div className="flex items-center gap-1.5 rounded-md border border-line-strong bg-bg px-2 focus-within:border-accent">
+                            <HashIcon size={14} className="text-fg-subtle" />
+                            <input
+                                autoFocus
+                                value={newChannel}
+                                onChange={(e) => setNewChannel(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Escape' && setCreating(false)}
+                                placeholder="new-channel"
+                                aria-label="New channel name"
+                                className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-fg-subtle focus-visible:outline-none"
+                            />
+                        </div>
+                        {createError && <p className="mt-1 px-1 text-xs text-danger">{createError}</p>}
+                    </form>
                 )}
 
-                <div className="flex items-center justify-between px-1 pt-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-6 h-6 rounded-full bg-[#141414] border border-[#2e2e2e] flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                            {currentUser?.displayName?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                        <span className="text-xs font-medium text-white truncate">
-                            {currentUser?.displayName || 'User'}
-                        </span>
+                <ul className="space-y-px">
+                    {channels.map((channel) => {
+                        const active = activeChannel?.id === channel.id;
+                        return (
+                            <li key={channel.id}>
+                                <button
+                                    type="button"
+                                    onClick={() => onSelectChannel(channel)}
+                                    aria-current={active ? 'page' : undefined}
+                                    className={`flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors ${
+                                        active ? 'bg-elevated font-medium text-fg' : 'text-fg-muted hover:bg-elevated/60 hover:text-fg'
+                                    }`}
+                                >
+                                    <HashIcon size={15} className={active ? 'text-fg-muted' : 'text-fg-subtle'} />
+                                    <span className="truncate">{channel.name}</span>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
+
+                <div className="mb-1 mt-6 px-2 text-[11px] font-medium uppercase tracking-wider text-fg-subtle">
+                    Online <span className="ml-1 normal-case tracking-normal">{onlineUsers.length}</span>
+                </div>
+                <ul className="space-y-px">
+                    {onlineUsers.map((u) => (
+                        <li key={u.id} className="flex h-8 items-center gap-2.5 px-2 text-sm text-fg-muted">
+                            <span className="relative">
+                                <Avatar name={u.displayName} seed={u.id} src={u.avatar} size={20} />
+                                <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-success ring-2 ring-panel" />
+                            </span>
+                            <span className="truncate">{u.displayName}{u.id === currentUser?.id && <span className="text-fg-subtle"> (you)</span>}</span>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+
+            <div className="shrink-0 space-y-1 border-t border-line p-2">
+                <button
+                    type="button"
+                    onClick={onOpenAISettings}
+                    className="flex h-9 w-full items-center gap-2.5 rounded-md px-2 text-sm text-fg-muted transition-colors hover:bg-elevated hover:text-fg"
+                >
+                    <KeyIcon size={15} />
+                    <span className="flex-1 text-left">AI key</span>
+                    <span className={`inline-flex items-center gap-1.5 text-xs ${hasOpenaiKey ? 'text-success' : 'text-fg-subtle'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${hasOpenaiKey ? 'bg-success' : 'bg-fg-subtle'}`} />
+                        {hasOpenaiKey ? 'Connected' : 'Not set'}
+                    </span>
+                </button>
+
+                <div className="flex items-center gap-2.5 rounded-md px-2 py-1.5">
+                    <Avatar name={currentUser?.displayName} seed={currentUser?.id} src={currentUser?.avatar} size={28} />
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{currentUser?.displayName}</p>
+                        {isDemo && <p className="text-[11px] text-fg-subtle">Guest · deleted after 24h</p>}
                     </div>
-                    <button
-                        onClick={onLogout}
-                        className="text-[11px] font-mono text-[#71717a] hover:text-[#ef4444] transition-colors"
-                        title="Sign Out"
-                    >
-                        Sign Out
+                    <button type="button" onClick={onLogout} className="icon-btn" aria-label="Sign out" title="Sign out">
+                        <LogOutIcon size={15} />
                     </button>
                 </div>
             </div>
-        </div>
+        </aside>
     );
 }
