@@ -2,7 +2,7 @@
 
 # DevChat
 
-**Real-time chat for developers, with syntax-highlighted code and in-line AI explanations.**
+**Team chat that speaks code: syntax-highlighted snippets and streamed AI explanations, right in the thread.**
 
 [**Live demo →**](https://dev-chat-virid.vercel.app) &nbsp;·&nbsp; one click, no signup &nbsp;·&nbsp; [Deployment guide](./DEPLOYMENT.md)
 
@@ -12,7 +12,7 @@
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Realtime-3ecf8e?logo=supabase&logoColor=white)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-<img src="docs/images/workspace.jpg" alt="DevChat workspace showing a channel with a syntax-highlighted code message" width="820">
+<img src="docs/images/app.jpg" alt="DevChat: a channel with a highlighted TypeScript snippet and its AI explanation" width="860">
 
 </div>
 
@@ -115,7 +115,6 @@ supabase/
 - [ ] Threads, reactions, and message editing in the UI (the database already supports edits)
 - [ ] Load older messages and full-text search
 - [ ] Google sign-in
-- [ ] A design pass on the chat UI and landing page
 - [ ] End-to-end tests with Playwright
 
 ## Author
